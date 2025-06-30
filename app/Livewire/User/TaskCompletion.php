@@ -61,8 +61,8 @@ class TaskCompletion extends Component
 
             // Check file size explicitly (in case client-side validation missed it)
             $fileSizeKB = round($this->photo->getSize() / 1024);
-            if ($fileSizeKB > 2048) {
-                throw new \Exception("Photo is too large ({$fileSizeKB}KB). Please use a photo smaller than 2MB or compress it first.");
+            if ($fileSizeKB > 20480) {
+                throw new \Exception("Photo is too large ({$fileSizeKB}KB). Please use a photo smaller than 20MB or compress it first.");
             }
 
             // Store the photo

@@ -239,7 +239,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Draw and compress
             ctx.drawImage(img, 0, 0, width, height);
             
-            canvas.toBlob(callback, 'image/jpeg', 0.8); // 80% quality
+            canvas.toBlob(function(blob) {
+                // Convert Blob to File object
+                const compressedFile = new File([blob], file.name, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+                callback(compressedFile);
+            }, 'image/jpeg', 0.8); // 80% quality
         };
         
         img.src = URL.createObjectURL(file);
