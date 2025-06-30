@@ -20,7 +20,6 @@ class Dashboard extends Component
     public $pendingTasks = 0;
     public $completedTasks = 0;
     public $recentAward = null;
-    public $isAwarding = false;
 
     public function mount()
     {
@@ -62,28 +61,7 @@ class Dashboard extends Component
         }
     }
 
-    public function awardDailyWinner()
-    {
-        if (Auth::user()->isAdmin()) {
-            $this->isAwarding = true;
-            
-            try {
-                $award = DailyAward::awardDailyWinner();
-                
-                if ($award) {
-                    session()->flash('message', "Daily winner awarded! {$award->user->name} earned ${$award->cash_amount} for {$award->points_earned} points!");
-                    $this->dispatch('award-created');
-                    $this->loadUserStats();
-                } else {
-                    session()->flash('error', 'Daily award has already been given for today or no eligible users found.');
-                }
-            } catch (\Exception $e) {
-                session()->flash('error', 'An error occurred while awarding the daily winner. Please try again.');
-            } finally {
-                $this->isAwarding = false;
-            }
-        }
-    }
+
 
     public function render()
     {
