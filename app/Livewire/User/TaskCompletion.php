@@ -18,7 +18,7 @@ class TaskCompletion extends Component
 
     public $assignment;
     
-    #[Validate('required|image|max:10240')] // 10MB max
+    #[Validate('required|image|max:2048')] // 2MB max to match PHP limits
     public $photo;
     
     #[Validate('nullable|string|max:500')]
@@ -39,13 +39,38 @@ class TaskCompletion extends Component
         }
     }
 
+    public function updatedPhoto()
+    {
+        // Validate photo immediately when uploaded for better user feedback
+        $this->validateOnly('photo');
+    }
+
     public function submitCompletion()
     {
         $this->validate();
 
         try {
+            // Additional checks for file upload issues
+            if (!$this->photo) {
+                throw new \Exception('No photo was uploaded. Please select a photo and try again.');
+            }
+
+            if (!$this->photo->isValid()) {
+                throw new \Exception('The uploaded file is corrupted. Please try taking/selecting the photo again.');
+            }
+
+            // Check file size explicitly (in case client-side validation missed it)
+            $fileSizeKB = round($this->photo->getSize() / 1024);
+            if ($fileSizeKB > 2048) {
+                throw new \Exception("Photo is too large ({$fileSizeKB}KB). Please use a photo smaller than 2MB or compress it first.");
+            }
+
             // Store the photo
             $photoPath = $this->photo->store('task-completions', 'public');
+
+            if (!$photoPath) {
+                throw new \Exception('Failed to save photo to server. Please try again.');
+            }
 
             // Create task completion record
             TaskCompletionModel::create([
@@ -60,8 +85,19 @@ class TaskCompletion extends Component
             
             return redirect()->route('user.tasks');
 
+        } catch (\Livewire\Exceptions\ValidationException $e) {
+            // Re-throw validation exceptions to show field-specific errors
+            throw $e;
         } catch (\Exception $e) {
-            session()->flash('error', 'Error uploading photo. Please try again.');
+            // Log the actual error for debugging
+            \Log::error('Photo upload error: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'assignment_id' => $this->assignment->id,
+                'photo_size' => $this->photo ? $this->photo->getSize() : 'null',
+                'photo_mime' => $this->photo ? $this->photo->getMimeType() : 'null',
+            ]);
+
+            session()->flash('error', $e->getMessage());
         }
     }
 

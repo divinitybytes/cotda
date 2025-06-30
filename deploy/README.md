@@ -63,7 +63,7 @@ sudo apt-get install -y nodejs
 1. **Upload your project to the server:**
    ```bash
    # Upload to /var/www/html/chore-tracker/
-   rsync -avz --progress ./chore-tracker/ user@server:/var/www/html/chore-tracker/
+   rsync -avz --progress ./cotda/ user@server:/var/www/html/cotda/
    ```
 
 2. **Set up environment file:**
@@ -149,12 +149,22 @@ php artisan tinker
 Then in the tinker console:
 ```php
 \App\Models\User::create([
-    'name' => 'Admin User',
-    'email' => 'admin@yourdomain.com',
-    'password' => bcrypt('your-secure-password'),
+    'name' => 'Chris Breen',
+    'email' => 'christopher.breen@protonmail.com',
+    'password' => bcrypt('Bbirchcor24'),
     'role' => 'admin',
     'email_verified_at' => now(),
 ]);
+
+\App\Models\User::create([
+    'name' => 'Harrison Silker',
+    'email' => 'harrison.silker@gmail.com',
+    'password' => bcrypt('password'),
+    'role' => 'user',
+    'email_verified_at' => now(),
+]);
+
+
 ```
 
 ## Security Considerations

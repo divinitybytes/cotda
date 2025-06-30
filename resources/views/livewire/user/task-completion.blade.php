@@ -61,10 +61,12 @@
                                wire:model="photo" 
                                accept="image/*" 
                                capture="environment"
+                               id="photoInput"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         
                         <div class="text-xs text-gray-500 mt-1">
-                            Maximum file size: 10MB. Supported formats: JPG, PNG, GIF
+                            Maximum file size: 2MB. Supported formats: JPG, PNG, GIF
+                            <span class="block text-blue-600 font-medium">📱 iPhone users: Photos will be automatically compressed if needed</span>
                         </div>
                         
                         @error('photo') 
@@ -91,6 +93,11 @@
                             </div>
                         </div>
                     @endif
+
+                    <!-- Upload Progress -->
+                    <div wire:loading wire:target="photo" class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300 animate-pulse" style="width: 45%"></div>
+                    </div>
                 </div>
             </div>
 
@@ -122,6 +129,7 @@
                     <li>• Take the photo from an angle that shows the work clearly</li>
                     <li>• Include the whole area/item that was cleaned or organized</li>
                     <li>• Avoid blurry or dark photos</li>
+                    <li>📱 <strong>iPhone users:</strong> Use "Photo" mode instead of "Portrait" mode for better compatibility</li>
                 </ul>
             </div>
 
@@ -141,11 +149,6 @@
                         Uploading...
                     </span>
                 </button>
-
-                <!-- Upload Progress -->
-                <div wire:loading wire:target="photo" class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 45%"></div>
-                </div>
             </div>
 
             <!-- Warning if overdue -->
@@ -175,14 +178,71 @@
 
     <!-- Success/Error Messages -->
     @if (session()->has('message'))
-        <div class="fixed bottom-4 left-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg">
+        <div class="fixed bottom-4 left-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50">
             {{ session('message') }}
         </div>
     @endif
 
     @if (session()->has('error'))
-        <div class="fixed bottom-4 left-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg">
+        <div class="fixed bottom-4 left-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50">
             {{ session('error') }}
         </div>
     @endif
 </div>
+
+<script>
+// Client-side image compression for iPhone compatibility
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInput = document.getElementById('photoInput');
+    
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Check if compression is needed (file > 1.5MB)
+            if (file.size > 1.5 * 1024 * 1024) {
+                compressImage(file, (compressedFile) => {
+                    // Replace the file input with compressed version
+                    const dt = new DataTransfer();
+                    dt.items.add(compressedFile);
+                    photoInput.files = dt.files;
+                    
+                    // Trigger Livewire update
+                    photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            }
+        });
+    }
+    
+    function compressImage(file, callback) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            // Calculate new dimensions to stay under 2MB
+            let { width, height } = img;
+            const maxDimension = 1200; // Max width or height
+            
+            if (width > height && width > maxDimension) {
+                height = (height * maxDimension) / width;
+                width = maxDimension;
+            } else if (height > maxDimension) {
+                width = (width * maxDimension) / height;
+                height = maxDimension;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw and compress
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob(callback, 'image/jpeg', 0.8); // 80% quality
+        };
+        
+        img.src = URL.createObjectURL(file);
+    }
+});
+</script>
