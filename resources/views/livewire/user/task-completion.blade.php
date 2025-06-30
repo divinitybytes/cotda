@@ -65,7 +65,7 @@
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         
                         <div class="text-xs text-gray-500 mt-1">
-                            Maximum file size: 2MB. Supported formats: JPG, PNG, GIF
+                            Maximum file size: 20MB. Supported formats: JPG, PNG, GIF
                             <span class="block text-blue-600 font-medium">📱 iPhone users: Photos will be automatically compressed if needed</span>
                         </div>
                         

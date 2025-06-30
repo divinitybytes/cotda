@@ -18,7 +18,7 @@ class TaskCompletion extends Component
 
     public $assignment;
     
-    #[Validate('required|image|max:2048')] // 2MB max to match PHP limits
+    #[Validate('required|image|max:20480')] // 20MB max to match PHP limits
     public $photo;
     
     #[Validate('nullable|string|max:500')]
