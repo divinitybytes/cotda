@@ -154,7 +154,7 @@
                 
                 @if(!$existingAward)
                     <p class="text-xs text-gray-500 mt-2">
-                        The top performer will receive $5.00 and be designated as "Child of the Day"
+                        The top performer will receive $10.00 and be designated as "Child of the Day"
                     </p>
                 @endif
             </div>
@@ -200,7 +200,7 @@
                     
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                         <p class="text-sm text-yellow-800">
-                            <strong>Note:</strong> This will award $5.00 to the selected user and designate them as "Child of the Day" for {{ \Carbon\Carbon::parse($selectedDate)->format('F j, Y') }}.
+                            <strong>Note:</strong> This will award $10.00 to the selected user and designate them as "Child of the Day" for {{ \Carbon\Carbon::parse($selectedDate)->format('F j, Y') }}.
                             @if($existingAward)
                                 This will replace the existing award.
                             @endif

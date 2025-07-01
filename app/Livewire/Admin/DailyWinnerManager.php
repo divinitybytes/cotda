@@ -138,7 +138,7 @@ class DailyWinnerManager extends Component
                 'user_id' => $userId,
                 'award_date' => $this->selectedDate,
                 'points_earned' => $userPoints,
-                'cash_amount' => 5.00,
+                'cash_amount' => 10.00,
                 'notes' => $notes,
             ]);
 

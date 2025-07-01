@@ -83,7 +83,7 @@ class UserBalance extends Model
     public function calculateAwardVestedAmount(DailyAward $award): float
     {
         $daysElapsed = $award->award_date->diffInDays(now());
-        $vestingDays = 365; // 1 year vesting period per award
+        $vestingDays = 180; // 6 months vesting period per award
         
         $vestingPercentage = min(100, ($daysElapsed / $vestingDays) * 100);
         return ($award->cash_amount * $vestingPercentage) / 100;
@@ -121,12 +121,12 @@ class UserBalance extends Model
             ->get();
 
         if ($dailyAwards->isEmpty()) {
-            return 365;
+            return 180;
         }
 
         foreach ($dailyAwards as $award) {
             $daysElapsed = $award->award_date->diffInDays(now());
-            $vestingDays = 365;
+            $vestingDays = 180;
             
             if ($daysElapsed < $vestingDays) {
                 return $vestingDays - $daysElapsed;
@@ -180,7 +180,7 @@ class UserBalance extends Model
         $details = [];
         foreach ($dailyAwards as $award) {
             $daysElapsed = $award->award_date->diffInDays(now());
-            $vestingDays = 365;
+            $vestingDays = 180;
             $vestingPercentage = min(100, ($daysElapsed / $vestingDays) * 100);
             $vestedAmount = $this->calculateAwardVestedAmount($award);
             $unvestedAmount = $award->cash_amount - $vestedAmount;

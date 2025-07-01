@@ -35,6 +35,206 @@
             </button>
         </div>
 
+        <!-- Sorting & Filtering Controls -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900">Sort & Filter</h3>
+                    <div class="flex items-center space-x-2">
+                        <button wire:click="clearFilters" class="text-sm text-gray-600 hover:text-gray-900">
+                            Clear Filters
+                        </button>
+                        <button wire:click="toggleFilters" 
+                                class="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm font-medium hover:bg-gray-200">
+                            {{ $showFilters ? '▼ Hide Filters' : '▶ Show Filters' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="p-4 border-b bg-gray-50">
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-sm font-medium text-gray-700 mr-2">Sort by:</span>
+                    
+                    <button wire:click="sortBy('completed_at')" 
+                            class="px-2 py-1 rounded text-xs font-medium {{ $sortBy === 'completed_at' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        Date Completed 
+                        @if($sortBy === 'completed_at')
+                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                        @endif
+                    </button>
+                    
+                    <button wire:click="sortBy('user_name')" 
+                            class="px-2 py-1 rounded text-xs font-medium {{ $sortBy === 'user_name' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        User Name 
+                        @if($sortBy === 'user_name')
+                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                        @endif
+                    </button>
+                    
+                    <button wire:click="sortBy('task_title')" 
+                            class="px-2 py-1 rounded text-xs font-medium {{ $sortBy === 'task_title' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        Task Name 
+                        @if($sortBy === 'task_title')
+                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                        @endif
+                    </button>
+                    
+                    <button wire:click="sortBy('points')" 
+                            class="px-2 py-1 rounded text-xs font-medium {{ $sortBy === 'points' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        Points 
+                        @if($sortBy === 'points')
+                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                        @endif
+                    </button>
+                    
+                    <button wire:click="sortBy('verification_status')" 
+                            class="px-2 py-1 rounded text-xs font-medium {{ $sortBy === 'verification_status' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        Status 
+                        @if($sortBy === 'verification_status')
+                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                        @endif
+                    </button>
+                    
+                    <button wire:click="sortBy('verified_at')" 
+                            class="px-2 py-1 rounded text-xs font-medium {{ $sortBy === 'verified_at' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        Verified Date 
+                        @if($sortBy === 'verified_at')
+                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                        @endif
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Filter Presets -->
+            @if($showFilters)
+                <div class="p-4 border-b bg-blue-50">
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-sm font-medium text-gray-700 mr-2">Quick Filters:</span>
+                        
+                        <button wire:click="$set('dateFrom', '{{ now()->toDateString() }}')" 
+                                class="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">
+                            Today
+                        </button>
+                        
+                        <button wire:click="$set('dateFrom', '{{ now()->subDays(7)->toDateString() }}')" 
+                                class="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">
+                            Last 7 Days
+                        </button>
+                        
+                        <button wire:click="$set('filterLateOnly', true)" 
+                                class="px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200">
+                            Late Submissions
+                        </button>
+                        
+                        <button wire:click="$set('filterWithPhoto', 'without')" 
+                                class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200">
+                            Missing Photos
+                        </button>
+                        
+                        <button wire:click="$set('minPoints', 20)" 
+                                class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200">
+                            High Value (20+ pts)
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Filter Options -->
+            @if($showFilters)
+                <div class="p-4 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- User Filter -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">User</label>
+                            <select wire:model.live="filterUser" 
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Users</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Task Filter -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task</label>
+                            <select wire:model.live="filterTask" 
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Tasks</option>
+                                @foreach($tasks as $task)
+                                    <option value="{{ $task->id }}">{{ $task->title }} ({{ $task->points }} pts)</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Task Type Filter -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
+                            <select wire:model.live="filterTaskType" 
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Types</option>
+                                <option value="one_time">One-time</option>
+                                <option value="recurring">Recurring</option>
+                            </select>
+                        </div>
+
+                        <!-- Date From -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                            <input type="date" wire:model.live="dateFrom" 
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <!-- Date To -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                            <input type="date" wire:model.live="dateTo" 
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <!-- Photo Filter -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Photo Evidence</label>
+                            <select wire:model.live="filterWithPhoto" 
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Submissions</option>
+                                <option value="with">With Photo</option>
+                                <option value="without">Without Photo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Points Range -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Points</label>
+                            <input type="number" wire:model.live="minPoints" 
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0" min="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Max Points</label>
+                            <input type="number" wire:model.live="maxPoints" 
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="100" min="0">
+                        </div>
+
+                        <!-- Late Submissions Filter -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Special Filters</label>
+                            <label class="flex items-center">
+                                <input type="checkbox" wire:model.live="filterLateOnly" 
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Late submissions only</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+
         <!-- Quick Actions (only for pending) -->
         @if($filter === 'pending' && $completions->count() > 0)
             <div class="bg-white rounded-lg shadow p-4">
@@ -49,6 +249,60 @@
                             class="bg-red-600 text-white px-4 py-2 rounded text-sm font-semibold">
                         ❌ Bulk Reject
                     </button>
+                </div>
+            </div>
+        @endif
+
+        <!-- Results Info -->
+        @if($completions->count() > 0)
+            <div class="bg-gray-50 rounded-lg p-3">
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    <div>
+                        Showing {{ $completions->count() }} of {{ $completions->total() }} results
+                        @if($completions->hasPages())
+                            (Page {{ $completions->currentPage() }} of {{ $completions->lastPage() }})
+                        @endif
+                    </div>
+                    
+                    <!-- Active Filters Display -->
+                    @if($filterUser || $filterTask || $dateFrom || $dateTo || $filterTaskType || $filterLateOnly || $filterWithPhoto || $minPoints || $maxPoints)
+                        <div class="flex flex-wrap gap-1">
+                            <span class="text-xs text-gray-500">Filters:</span>
+                            @if($filterUser)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                    User: {{ $users->find($filterUser)->name ?? 'Unknown' }}
+                                </span>
+                            @endif
+                            @if($filterTask)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                    Task: {{ $tasks->find($filterTask)->title ?? 'Unknown' }}
+                                </span>
+                            @endif
+                            @if($dateFrom || $dateTo)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                    Date: {{ $dateFrom ? \Carbon\Carbon::parse($dateFrom)->format('M j') : 'Start' }} - {{ $dateTo ? \Carbon\Carbon::parse($dateTo)->format('M j') : 'End' }}
+                                </span>
+                            @endif
+                            @if($filterTaskType)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                    Type: {{ ucfirst($filterTaskType) }}
+                                </span>
+                            @endif
+                            @if($filterLateOnly)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Late Only</span>
+                            @endif
+                            @if($filterWithPhoto)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                    {{ ucfirst($filterWithPhoto) }} Photo
+                                </span>
+                            @endif
+                            @if($minPoints || $maxPoints)
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                    Points: {{ $minPoints ?: '0' }}-{{ $maxPoints ?: '∞' }}
+                                </span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
         @endif

@@ -26,19 +26,19 @@ A mobile-first Laravel 12 application for tracking household chores with points,
 3. **Photos are submitted** for admin verification
 4. **Admin reviews submissions** and approves/rejects with notes
 5. **Approved tasks** add points to user's total
-6. **Daily winner** gets "Child of the Day" award + $5.00
-7. **Cash vests** over 1 year from first award
+6. **Daily winner** gets "Child of the Day" award + $10.00
+7. **Cash vests** over 6 months from first award
 8. **Users can cash out** vested amounts anytime
 
 ## 💰 Cash & Vesting System
 
-- **Daily Award**: $5.00 for each "Child of the Day" win
-- **Vesting Period**: 1 year from first award
+- **Daily Award**: $10.00 for each "Child of the Day" win
+- **Vesting Period**: 6 months from first award
 - **Rolling Balance**: Full cash balance grows with each award
 - **Early Cash-Out**: Vested amount available immediately
-- **Vesting Calculation**: Linear vesting over 365 days
+- **Vesting Calculation**: Linear vesting over 180 days
 
-Example: If you earned $100 total and it's been 6 months since your first award, you have $50 vested (available to cash out) and $50 still vesting.
+Example: If you earned $100 total and it's been 3 months since your first award, you have $50 vested (available to cash out) and $50 still vesting.
 
 ## 🛠 Technology Stack
 
@@ -138,7 +138,7 @@ The app runs on localhost:8000 and includes:
 
 The "Child of the Day" award is given to the user with the most approved points each day:
 - Automatically calculated based on verified completions
-- $5.00 cash award per day won
+- $10.00 cash award per day won
 - Ties are broken by earliest completion time
 - Award can be manually triggered by admin
 - Only one winner per day

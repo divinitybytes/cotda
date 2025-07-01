@@ -172,7 +172,7 @@
                             </div>
                             
                             <div class="text-right">
-                                <div class="font-bold text-green-600">+$5.00</div>
+                                <div class="font-bold text-green-600">+$10.00</div>
                                 <div class="text-xs text-gray-500">{{ $award->points_earned }} pts</div>
                             </div>
                         </div>

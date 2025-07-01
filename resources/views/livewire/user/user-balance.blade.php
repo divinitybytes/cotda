@@ -183,7 +183,7 @@
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 class="font-semibold text-blue-900 mb-2">💡 How Vesting Works</h4>
             <div class="text-sm text-blue-800 space-y-1">
-                <p>• Each $5 award vests individually over 365 days</p>
+                                    <p>• Each $10 award vests individually over 180 days (6 months)</p>
                 <p>• You can cash out your total vested amount anytime</p>
                 <p>• ⚠️ Cashing out forfeits ALL remaining unvested amounts</p>
                 <p>• Awards continue vesting daily until fully vested</p>

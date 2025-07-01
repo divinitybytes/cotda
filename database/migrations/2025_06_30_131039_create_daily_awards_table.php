@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->date('award_date');
             $table->integer('points_earned');
-            $table->decimal('cash_amount', 8, 2)->default(5.00);
+            $table->decimal('cash_amount', 8, 2)->default(10.00);
             $table->text('notes')->nullable();
             $table->timestamps();
             

@@ -64,7 +64,7 @@ class DailyAward extends Model
                 [
                     'user_id' => $topUser->id,
                     'points_earned' => $topUser->daily_points,
-                    'cash_amount' => 5.00,
+                    'cash_amount' => 10.00,
                     'notes' => "Child of the Day with {$topUser->daily_points} points",
                 ]
             );
