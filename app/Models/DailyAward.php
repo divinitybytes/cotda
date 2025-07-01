@@ -33,25 +33,42 @@ class DailyAward extends Model
     }
 
     /**
-     * Create daily award for top performer
+     * Create daily award for top performer (including manual adjustments)
      */
     public static function awardDailyWinner($date = null): ?self
     {
         $date = $date ?? now()->toDateString();
 
-        // Find user with most points for the day
-        $topUser = User::join('task_completions', 'users.id', '=', 'task_completions.user_id')
-            ->join('task_assignments', 'task_completions.task_assignment_id', '=', 'task_assignments.id')
-            ->join('tasks', 'task_assignments.task_id', '=', 'tasks.id')
-            ->where('task_completions.verification_status', 'approved')
-            ->whereDate('task_completions.completed_at', $date)
-            ->where('users.role', 'user')
-            ->selectRaw('users.id, users.name, SUM(tasks.points) as daily_points')
-            ->groupBy('users.id', 'users.name')
-            ->orderByDesc('daily_points')
-            ->first();
+        // Find user with most points for the day (including manual adjustments)
+        $users = User::where('role', 'user')->get();
+        $topUser = null;
+        $maxPoints = 0;
 
-        if (!$topUser || $topUser->daily_points == 0) {
+        foreach ($users as $user) {
+            // Get task completion points for the day
+            $taskPoints = \DB::table('task_completions')
+                ->join('task_assignments', 'task_completions.task_assignment_id', '=', 'task_assignments.id')
+                ->join('tasks', 'task_assignments.task_id', '=', 'tasks.id')
+                ->where('task_completions.user_id', $user->id)
+                ->where('task_completions.verification_status', 'approved')
+                ->whereDate('task_completions.completed_at', $date)
+                ->sum('tasks.points');
+
+            // Get manual adjustment points for the day
+            $adjustmentPoints = PointAdjustment::where('user_id', $user->id)
+                ->whereDate('adjustment_date', $date)
+                ->sum('points');
+
+            $totalPoints = $taskPoints + $adjustmentPoints;
+
+            if ($totalPoints > $maxPoints) {
+                $maxPoints = $totalPoints;
+                $topUser = $user;
+                $topUser->daily_points = $totalPoints;
+            }
+        }
+
+        if (!$topUser || $maxPoints <= 0) {
             return null;
         }
 

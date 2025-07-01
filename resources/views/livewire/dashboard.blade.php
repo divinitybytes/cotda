@@ -69,6 +69,10 @@
                 <a href="{{ route('admin.daily-winner') }}" class="block bg-yellow-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-yellow-700">
                     🏆 Manage Daily Winner
                 </a>
+                
+                <a href="{{ route('admin.point-adjustments') }}" class="block bg-purple-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-purple-700">
+                    ⚡ Point Adjustments
+                </a>
             </div>
 
             @if($recentCompletions->count() > 0)

@@ -115,6 +115,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get point adjustments for this user
+     */
+    public function pointAdjustments(): HasMany
+    {
+        return $this->hasMany(PointAdjustment::class);
+    }
+
+    /**
+     * Get point adjustments made by this admin
+     */
+    public function madeAdjustments(): HasMany
+    {
+        return $this->hasMany(PointAdjustment::class, 'admin_id');
+    }
+
+    /**
      * Add points to user
      */
     public function addPoints(int $points): void
@@ -123,21 +139,37 @@ class User extends Authenticatable
     }
 
     /**
-     * Get user's ranking based on points today
+     * Get user's ranking based on points today (including manual adjustments)
      */
     public function getTodayRanking(): int
     {
         $today = now()->toDateString();
         
-        $usersWithPointsToday = self::join('task_completions', 'users.id', '=', 'task_completions.user_id')
-            ->join('task_assignments', 'task_completions.task_assignment_id', '=', 'task_assignments.id')
-            ->join('tasks', 'task_assignments.task_id', '=', 'tasks.id')
-            ->where('task_completions.verification_status', 'approved')
-            ->whereDate('task_completions.completed_at', $today)
-            ->selectRaw('users.id, SUM(tasks.points) as daily_points')
-            ->groupBy('users.id')
-            ->orderByDesc('daily_points')
-            ->pluck('daily_points', 'users.id');
+        // Get all users and calculate their total points for today
+        $usersWithPointsToday = collect();
+        
+        $allUsers = self::where('role', 'user')->get();
+        
+        foreach ($allUsers as $user) {
+            // Get task completion points for today
+            $taskPoints = TaskCompletion::where('task_completions.user_id', $user->id)
+                ->where('verification_status', 'approved')
+                ->whereDate('completed_at', $today)
+                ->join('task_assignments', 'task_completions.task_assignment_id', '=', 'task_assignments.id')
+                ->join('tasks', 'task_assignments.task_id', '=', 'tasks.id')
+                ->sum('tasks.points');
+
+            // Get manual adjustment points for today
+            $adjustmentPoints = PointAdjustment::where('user_id', $user->id)
+                ->whereDate('adjustment_date', $today)
+                ->sum('points');
+
+            $totalPoints = $taskPoints + $adjustmentPoints;
+            
+            if ($totalPoints > 0) {
+                $usersWithPointsToday->put($user->id, $totalPoints);
+            }
+        }
 
         $userPoints = $usersWithPointsToday->get($this->id, 0);
         return $usersWithPointsToday->filter(fn($points) => $points > $userPoints)->count() + 1;

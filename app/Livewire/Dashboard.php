@@ -9,6 +9,7 @@ use App\Models\TaskAssignment;
 use App\Models\TaskCompletion;
 use App\Models\DailyAward;
 use App\Models\CashOutRequest;
+use App\Models\PointAdjustment;
 use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends Component
@@ -36,14 +37,22 @@ class Dashboard extends Component
             $this->ranking = $user->getTodayRanking();
             $this->balance = $user->balance;
             
-            // Get today's points
+            // Get today's points from task completions
             $today = now()->toDateString();
-            $this->todayPoints = TaskCompletion::where('task_completions.user_id', $user->id)
+            $taskPoints = TaskCompletion::where('task_completions.user_id', $user->id)
                 ->where('verification_status', 'approved')
                 ->whereDate('completed_at', $today)
                 ->join('task_assignments', 'task_completions.task_assignment_id', '=', 'task_assignments.id')
                 ->join('tasks', 'task_assignments.task_id', '=', 'tasks.id')
                 ->sum('tasks.points');
+
+            // Get today's manual point adjustments
+            $adjustmentPoints = PointAdjustment::where('user_id', $user->id)
+                ->whereDate('adjustment_date', $today)
+                ->sum('points');
+
+            // Total today's points
+            $this->todayPoints = $taskPoints + $adjustmentPoints;
 
             // Get task statistics
             $this->pendingTasks = TaskAssignment::where('user_id', $user->id)
