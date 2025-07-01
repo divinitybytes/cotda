@@ -187,6 +187,42 @@
             @if($currentUserRank && $currentUserRank->rank === 1)
                 <h4 class="font-semibold text-gray-900 mb-1">Congratulations, Champion! 🎉</h4>
                 <p class="text-sm text-gray-700">You're currently in the lead! Keep up the great work!</p>
+                <!-- Confetti Stars Effect for #1 User -->
+                <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (window.confettiStarsFired) return;
+                        window.confettiStarsFired = true;
+                        const defaults = {
+                            spread: 360,
+                            ticks: 50,
+                            gravity: 0,
+                            decay: 0.94,
+                            startVelocity: 30,
+                            shapes: ["star"],
+                            colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
+                            };
+                            function shoot() {
+                                confetti({
+                                    ...defaults,
+                                    particleCount: 40,
+                                    scalar: 1.2,
+                                    shapes: ["star"],
+                                });
+
+                                confetti({
+                                    ...defaults,
+                                    particleCount: 10,
+                                    scalar: 0.75,
+                                    shapes: ["circle"],
+                                });
+                                }
+
+                                setTimeout(shoot, 0);
+                                setTimeout(shoot, 100);
+                                setTimeout(shoot, 200);
+                    });
+                </script>
             @elseif($currentUserRank && $currentUserRank->rank <= 3)
                 <h4 class="font-semibold text-gray-900 mb-1">You're in the Top 3! 🔥</h4>
                 <p class="text-sm text-gray-700">Great job! A few more tasks and you could be #1!</p>
