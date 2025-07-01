@@ -154,7 +154,7 @@
             <!-- Quick Actions -->
             <div class="grid grid-cols-2 gap-3">
                 <a href="{{ route('user.tasks') }}" class="bg-blue-600 text-white rounded-lg p-4 text-center font-semibold relative">
-                    📝 My Tasks
+                    📝 Today's Tasks
                     @if($pendingTasks > 0)
                         <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ $pendingTasks }}</span>
                     @endif

@@ -30,28 +30,49 @@ class TaskList extends Component
     public function render()
     {
         $query = TaskAssignment::with(['task', 'completion'])
-            ->where('user_id', Auth::id());
+            ->where('user_id', Auth::id())
+            ->whereDate('assigned_date', now()->toDateString()); // Only show today's tasks
 
         // Apply filter
         switch ($this->filter) {
             case 'pending':
-                $query->where('is_completed', false);
+                // Show tasks that are not completed OR have pending verification
+                $query->where(function($q) {
+                    $q->where('is_completed', false)
+                      ->orWhereHas('completion', function($completionQuery) {
+                          $completionQuery->where('verification_status', 'pending');
+                      });
+                });
                 break;
             case 'completed':
-                $query->where('is_completed', true);
+                // Show tasks that are completed with approved verification OR rejected (still considered complete attempt)
+                $query->where(function($q) {
+                    $q->whereHas('completion', function($completionQuery) {
+                        $completionQuery->whereIn('verification_status', ['approved', 'rejected']);
+                    });
+                });
                 break;
-            // 'all' shows everything
+            // 'all' shows everything (but still only today's tasks)
         }
 
         $assignments = $query->latest('assigned_date')->paginate(10);
 
-        // Get quick stats
+        // Get quick stats for today only
         $stats = [
             'pending' => TaskAssignment::where('user_id', Auth::id())
-                ->where('is_completed', false)
+                ->whereDate('assigned_date', now()->toDateString())
+                ->where(function($q) {
+                    $q->where('is_completed', false)
+                      ->orWhereHas('completion', function($completionQuery) {
+                          $completionQuery->where('verification_status', 'pending');
+                      });
+                })
                 ->count(),
             'completed' => TaskAssignment::where('user_id', Auth::id())
-                ->where('is_completed', true)
+                ->whereDate('assigned_date', now()->toDateString())
+                ->whereHas('completion', function($completionQuery) {
+                    $completionQuery->whereIn('verification_status', ['approved', 'rejected']);
+                })
                 ->count(),
             'total_points' => TaskCompletionModel::where('task_completions.user_id', Auth::id())
                 ->where('verification_status', 'approved')

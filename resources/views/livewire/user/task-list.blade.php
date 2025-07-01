@@ -1,8 +1,8 @@
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b px-4 py-3">
-        <h1 class="text-xl font-bold text-gray-900">My Tasks</h1>
-        <p class="text-sm text-gray-600">Complete tasks to earn points</p>
+        <h1 class="text-xl font-bold text-gray-900">Today's Tasks</h1>
+        <p class="text-sm text-gray-600">Complete today's tasks to earn points • {{ now()->format('M j, Y') }}</p>
     </div>
 
     <div class="p-4">
@@ -19,8 +19,8 @@
             </div>
             
             <div class="bg-white rounded-lg p-3 text-center shadow">
-                <div class="text-lg font-bold text-purple-600">{{ $stats['total_points'] }}</div>
-                <div class="text-xs text-gray-600">Total Points</div>
+                <div class="text-lg font-bold text-purple-600">{{ $stats['today_points'] }}</div>
+                <div class="text-xs text-gray-600">Today's Points</div>
             </div>
         </div>
 
@@ -51,9 +51,17 @@
                                 <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
                                     {{ $assignment->task->points }} pts
                                 </span>
-                                @if($assignment->is_completed)
+                                @if($assignment->completion && $assignment->completion->verification_status === 'approved')
                                     <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">
-                                        ✓ Done
+                                        ✓ Approved
+                                    </span>
+                                @elseif($assignment->completion && $assignment->completion->verification_status === 'rejected')
+                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">
+                                        ✗ Rejected
+                                    </span>
+                                @elseif($assignment->completion && $assignment->completion->verification_status === 'pending')
+                                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold">
+                                        ⏳ Pending
                                     </span>
                                 @endif
                             </div>
@@ -84,7 +92,10 @@
                                     @elseif($assignment->completion->verification_status === 'approved')
                                         <span class="text-green-600 text-xs font-medium">✅ Approved</span>
                                     @elseif($assignment->completion->verification_status === 'rejected')
-                                        <span class="text-red-600 text-xs font-medium">❌ Rejected</span>
+                                        <a href="{{ route('user.task.complete', $assignment->id) }}" 
+                                           class="bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold">
+                                            Complete Again
+                                        </a>
                                     @endif
                                 @elseif(!$assignment->is_completed)
                                     <a href="{{ route('user.task.complete', $assignment->id) }}" 
@@ -111,23 +122,23 @@
             </div>
         @else
             <div class="bg-white rounded-lg shadow p-8 text-center">
-                <div class="text-6xl mb-4">📝</div>
+                <div class="text-6xl mb-4">📅</div>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">
                     @if($filter === 'pending')
-                        No pending tasks
+                        No pending tasks for today
                     @elseif($filter === 'completed')
-                        No completed tasks yet
+                        No completed tasks for today
                     @else
-                        No tasks assigned
+                        No tasks assigned for today
                     @endif
                 </h3>
                 <p class="text-gray-600">
                     @if($filter === 'pending')
-                        All caught up! Check back later for new tasks.
+                        Great job! You've completed all of today's tasks or they're waiting for review.
                     @elseif($filter === 'completed')
-                        Complete some tasks to see them here.
+                        Complete some tasks today to see them here.
                     @else
-                        Ask an admin to assign some tasks to you.
+                        Check back later or ask an admin to assign today's tasks.
                     @endif
                 </p>
             </div>

@@ -33,9 +33,18 @@ class TaskCompletion extends Component
             abort(403);
         }
 
-        // Check if already completed or has pending completion
-        if ($this->assignment->isCompleted() || $this->assignment->hasPendingCompletion()) {
-            return redirect()->route('user.tasks')->with('error', 'This task has already been completed or is pending verification.');
+        // Check if task has approved completion or pending completion
+        // Allow retry if rejected
+        if ($this->assignment->completion) {
+            if ($this->assignment->completion->verification_status === 'approved') {
+                return redirect()->route('user.tasks')->with('error', 'This task has already been completed and approved.');
+            }
+            
+            if ($this->assignment->completion->verification_status === 'pending') {
+                return redirect()->route('user.tasks')->with('error', 'This task completion is pending verification.');
+            }
+            
+            // If rejected, allow retry by continuing (don't redirect)
         }
     }
 
@@ -72,14 +81,33 @@ class TaskCompletion extends Component
                 throw new \Exception('Failed to save photo to server. Please try again.');
             }
 
-            // Create task completion record
-            TaskCompletionModel::create([
-                'task_assignment_id' => $this->assignment->id,
-                'user_id' => Auth::id(),
-                'photo_path' => $photoPath,
-                'completion_notes' => $this->completionNotes,
-                'completed_at' => now(),
-            ]);
+            // Check if there's an existing completion (rejected task retry)
+            if ($this->assignment->completion && $this->assignment->completion->verification_status === 'rejected') {
+                // Delete old photo if it exists
+                if ($this->assignment->completion->photo_path) {
+                    Storage::disk('public')->delete($this->assignment->completion->photo_path);
+                }
+                
+                // Update existing completion record
+                $this->assignment->completion->update([
+                    'photo_path' => $photoPath,
+                    'completion_notes' => $this->completionNotes,
+                    'verification_status' => 'pending',
+                    'admin_notes' => null,
+                    'verified_by' => null,
+                    'verified_at' => null,
+                    'completed_at' => now(),
+                ]);
+            } else {
+                // Create new task completion record
+                TaskCompletionModel::create([
+                    'task_assignment_id' => $this->assignment->id,
+                    'user_id' => Auth::id(),
+                    'photo_path' => $photoPath,
+                    'completion_notes' => $this->completionNotes,
+                    'completed_at' => now(),
+                ]);
+            }
 
             session()->flash('message', 'Task completed! Your submission is pending admin verification.');
             

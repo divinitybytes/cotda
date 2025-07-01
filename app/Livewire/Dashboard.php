@@ -78,13 +78,22 @@ class Dashboard extends Component
             // Total today's points
             $this->todayPoints = $taskPoints + $adjustmentPoints;
 
-            // Get task statistics
+            // Get task statistics - only count today's tasks
             $this->pendingTasks = TaskAssignment::where('user_id', $user->id)
-                ->where('is_completed', false)
+                ->whereDate('assigned_date', now()->toDateString())
+                ->where(function($q) {
+                    $q->where('is_completed', false)
+                      ->orWhereHas('completion', function($completionQuery) {
+                          $completionQuery->where('verification_status', 'pending');
+                      });
+                })
                 ->count();
                 
             $this->completedTasks = TaskAssignment::where('user_id', $user->id)
-                ->where('is_completed', true)
+                ->whereDate('assigned_date', now()->toDateString())
+                ->whereHas('completion', function($completionQuery) {
+                    $completionQuery->whereIn('verification_status', ['approved', 'rejected']);
+                })
                 ->count();
 
             // Get recent award
@@ -98,8 +107,6 @@ class Dashboard extends Component
                 ->exists();
         }
     }
-
-
 
     public function render()
     {
@@ -123,10 +130,16 @@ class Dashboard extends Component
                 ->take(5)
                 ->get();
         } else {
-            // User dashboard data
+            // User dashboard data - only show today's tasks
             $data['pendingAssignments'] = TaskAssignment::with(['task'])
                 ->where('user_id', $user->id)
-                ->where('is_completed', false)
+                ->whereDate('assigned_date', now()->toDateString())
+                ->where(function($q) {
+                    $q->where('is_completed', false)
+                      ->orWhereHas('completion', function($completionQuery) {
+                          $completionQuery->where('verification_status', 'pending');
+                      });
+                })
                 ->latest()
                 ->take(5)
                 ->get();
