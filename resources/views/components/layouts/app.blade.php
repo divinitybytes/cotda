@@ -51,7 +51,7 @@
         <style>
             .pwa-install-prompt {
                 position: fixed;
-                bottom: 80px;
+                bottom: 96px; /* Increased to be well above 64px bottom nav */
                 left: 16px;
                 right: 16px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -59,13 +59,26 @@
                 padding: 16px;
                 border-radius: 12px;
                 box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-                z-index: 1000;
-                transform: translateY(100%);
+                z-index: 40; /* Below modals (50) but above nav (50) - actually let's use 60 to be safe */
+                transform: translateY(calc(100% + 96px)); /* Slide completely off screen including bottom margin */
                 transition: transform 0.3s ease;
+                max-width: 400px;
+                margin: 0 auto;
             }
             
             .pwa-install-prompt.show {
                 transform: translateY(0);
+            }
+            
+            /* Hide completely when not shown to prevent any interference */
+            .pwa-install-prompt:not(.show) {
+                visibility: hidden;
+                pointer-events: none;
+            }
+            
+            .pwa-install-prompt.show {
+                visibility: visible;
+                pointer-events: auto;
             }
             
             .pwa-install-prompt button {
@@ -92,6 +105,11 @@
                 cursor: pointer;
                 float: right;
                 margin-top: -4px;
+            }
+            
+            /* Ensure bottom nav stays on top when needed */
+            nav.fixed.bottom-0 {
+                z-index: 50;
             }
         </style>
     </head>
@@ -220,6 +238,37 @@
         <script>
             let deferredPrompt;
             let pwaInstallPromptShown = localStorage.getItem('pwa-prompt-shown') === 'true';
+            let checkStandaloneInterval;
+            
+            // Helper functions for PWA detection
+            function isRunningStandalone() {
+                return window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone || 
+                       document.referrer.includes('android-app://');
+            }
+            
+            function isIOS() {
+                return /iPad|iPhone|iPod/.test(navigator.userAgent);
+            }
+            
+            function isPWAInstalled() {
+                return localStorage.getItem('pwa-installed') === 'true' || 
+                       isRunningStandalone();
+            }
+            
+            function markPWAAsInstalled() {
+                localStorage.setItem('pwa-installed', 'true');
+                localStorage.setItem('pwa-prompt-shown', 'true');
+                pwaInstallPromptShown = true;
+                hidePWAPrompt();
+                
+                // Clear the interval check
+                if (checkStandaloneInterval) {
+                    clearInterval(checkStandaloneInterval);
+                }
+                
+                console.log('PWA marked as installed');
+            }
             
             // Register Service Worker
             if ('serviceWorker' in navigator) {
@@ -247,21 +296,37 @@
                 });
             }
             
+            // Check if running in standalone mode on load
+            function initialPWACheck() {
+                if (isPWAInstalled()) {
+                    markPWAAsInstalled();
+                    return true;
+                }
+                return false;
+            }
+            
             // PWA Install Prompt
             window.addEventListener('beforeinstallprompt', (e) => {
                 console.log('beforeinstallprompt fired');
                 e.preventDefault();
                 deferredPrompt = e;
                 
-                // Show install prompt if not already shown
-                if (!pwaInstallPromptShown && !window.matchMedia('(display-mode: standalone)').matches) {
+                // Don't show if PWA is already installed or prompt was dismissed
+                if (!isPWAInstalled() && !pwaInstallPromptShown) {
                     setTimeout(() => {
-                        showPWAPrompt();
+                        if (!isPWAInstalled()) {
+                            showPWAPrompt();
+                        }
                     }, 3000); // Show after 3 seconds
                 }
             });
             
             function showPWAPrompt() {
+                // Double-check that PWA isn't installed before showing
+                if (isPWAInstalled()) {
+                    return;
+                }
+                
                 const prompt = document.getElementById('pwa-install-prompt');
                 if (prompt) {
                     prompt.classList.add('show');
@@ -285,70 +350,108 @@
                     
                     if (result.outcome === 'accepted') {
                         console.log('User accepted the install prompt');
+                        markPWAAsInstalled();
                     } else {
                         console.log('User dismissed the install prompt');
+                        hidePWAPrompt();
                     }
                     
                     deferredPrompt = null;
-                    hidePWAPrompt();
                 } else {
                     // Fallback for browsers that don't support install prompt
-                    alert('To install this app:\n\n1. Tap the share button\n2. Select "Add to Home Screen"');
-                    hidePWAPrompt();
+                    if (isIOS()) {
+                        // For iOS, just hide the prompt since they'll follow manual instructions
+                        hidePWAPrompt();
+                        
+                        // Start checking if they manually added it
+                        startStandaloneCheck();
+                    } else {
+                        alert('To install this app:\n\n1. Tap the menu button\n2. Select "Add to Home Screen" or "Install App"');
+                        hidePWAPrompt();
+                    }
                 }
             }
             
-            // Track install event
+            // Track install event (mainly for Android Chrome)
             window.addEventListener('appinstalled', () => {
-                console.log('PWA was installed');
-                hidePWAPrompt();
-                
-                // Hide prompt permanently after successful install
-                localStorage.setItem('pwa-installed', 'true');
+                console.log('appinstalled event fired');
+                markPWAAsInstalled();
             });
             
-            // Don't show prompt if already installed
-            if (localStorage.getItem('pwa-installed') === 'true' || 
-                window.matchMedia('(display-mode: standalone)').matches) {
-                pwaInstallPromptShown = true;
-            }
-            
-            // Handle iOS install instructions
-            function isIOS() {
-                return /iPad|iPhone|iPod/.test(navigator.userAgent);
-            }
-            
-            function isInStandaloneMode() {
-                return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            }
-            
-            // Show iOS-specific install instructions
-            if (isIOS() && !isInStandaloneMode() && !pwaInstallPromptShown) {
-                setTimeout(() => {
-                    const prompt = document.getElementById('pwa-install-prompt');
-                    if (prompt) {
-                        prompt.innerHTML = `
-                            <button class="close-btn" onclick="hidePWAPrompt()">&times;</button>
-                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                                <div style="font-size: 24px; margin-right: 12px;">📱</div>
-                                <div>
-                                    <div style="font-weight: 600; margin-bottom: 4px;">Install Chore Tracker</div>
-                                    <div style="font-size: 14px; opacity: 0.9;">Add to your home screen for the best experience!</div>
-                                </div>
-                            </div>
-                            <div style="font-size: 14px; line-height: 1.4;">
-                                1. Tap the share button <span style="font-size: 16px;">⬆️</span><br>
-                                2. Select "Add to Home Screen" <span style="font-size: 16px;">➕</span><br>
-                                3. Tap "Add" to install
-                            </div>
-                            <div style="margin-top: 12px;">
-                                <button onclick="hidePWAPrompt()" style="width: 100%;">Got it!</button>
-                            </div>
-                        `;
-                        prompt.classList.add('show');
+            // For iOS and other platforms where appinstalled doesn't fire
+            function startStandaloneCheck() {
+                checkStandaloneInterval = setInterval(() => {
+                    if (isRunningStandalone()) {
+                        markPWAAsInstalled();
                     }
-                }, 5000);
+                }, 1000); // Check every second
+                
+                // Clear interval after 30 seconds to avoid indefinite checking
+                setTimeout(() => {
+                    if (checkStandaloneInterval) {
+                        clearInterval(checkStandaloneInterval);
+                    }
+                }, 30000);
             }
+            
+            // Listen for page visibility changes (when user switches between browser and PWA)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && isRunningStandalone() && !isPWAInstalled()) {
+                    markPWAAsInstalled();
+                }
+            });
+            
+            // Initial check on page load
+            window.addEventListener('load', () => {
+                initialPWACheck();
+            });
+            
+            // Run initial check immediately in case load event already fired
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                initialPWACheck();
+            }
+            
+            // Show iOS-specific install instructions for devices that don't support beforeinstallprompt
+            function showIOSInstructions() {
+                if (isIOS() && !isPWAInstalled() && !pwaInstallPromptShown && !deferredPrompt) {
+                    setTimeout(() => {
+                        // Double-check PWA isn't installed before showing
+                        if (isPWAInstalled()) {
+                            return;
+                        }
+                        
+                        const prompt = document.getElementById('pwa-install-prompt');
+                        if (prompt) {
+                            prompt.innerHTML = `
+                                <button class="close-btn" onclick="hidePWAPrompt()">&times;</button>
+                                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                    <div style="font-size: 24px; margin-right: 12px;">📱</div>
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">Install Chore Tracker</div>
+                                        <div style="font-size: 14px; opacity: 0.9;">Add to your home screen for the best experience!</div>
+                                    </div>
+                                </div>
+                                <div style="font-size: 14px; line-height: 1.4;">
+                                    1. Tap the share button <span style="font-size: 16px;">⬆️</span><br>
+                                    2. Select "Add to Home Screen" <span style="font-size: 16px;">➕</span><br>
+                                    3. Tap "Add" to install
+                                </div>
+                                <div style="margin-top: 12px;">
+                                    <button onclick="startStandaloneCheck(); hidePWAPrompt();" style="width: 100%;">Got it!</button>
+                                </div>
+                            `;
+                            prompt.classList.add('show');
+                        }
+                    }, 5000);
+                }
+            }
+            
+            // Trigger iOS instructions if needed
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    showIOSInstructions();
+                }, 1000); // Wait a bit to see if beforeinstallprompt fires
+            });
         </script>
         
         <!-- Auto-hide flash messages -->

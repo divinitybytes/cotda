@@ -1,6 +1,6 @@
 {
-  "name": "Chore Tracker",
-  "short_name": "Chores",
+  "name": "CotDA",
+  "short_name": "CotDA",
   "description": "Mobile-first chore tracking application for kids",
   "start_url": "/",
   "display": "standalone",
