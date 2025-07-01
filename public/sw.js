@@ -7,8 +7,8 @@ const STATIC_FILES = [
   '/',
   '/build/app.js',
   '/build/app.css',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/app_icons/icon-192x192.png',
+  '/app_icons/icon-512x512.png',
   '/manifest.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js'
@@ -178,7 +178,7 @@ self.addEventListener('fetch', event => {
               
               // For images, return a placeholder if available
               if (request.destination === 'image') {
-                return caches.match('/icons/icon-192x192.png');
+                return caches.match('/app_icons/icon-192x192.png');
               }
               
               // If it's a navigation request, return cached home page
