@@ -201,11 +201,19 @@
                                 <div class="text-xs font-medium text-gray-700 mb-1">Select users:</div>
                                 @foreach($users as $user)
                                     <label class="flex items-center space-x-2 text-xs py-1">
-                                        <input type="checkbox" wire:model="selectedUsers" value="{{ $user->id }}">
+                                        <input type="checkbox" wire:model="quickAssignUsers" value="{{ $user->id }}">
                                         <span>{{ $user->name }}</span>
                                     </label>
                                 @endforeach
-                                <button wire:click="assignTask({{ $task->id }})"
+                                <div class="mt-2">
+                                    <label class="block text-xs text-gray-700 mb-1">Assignment Date</label>
+                                    <input type="date" wire:model="quickAssignDate" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                                </div>
+                                <div class="mt-2">
+                                    <label class="block text-xs text-gray-700 mb-1">Due Date</label>
+                                    <input type="date" wire:model="quickAssignDueDate" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                                </div>
+                                <button wire:click.prevent="$set('quickAssignTaskId', {{ $task->id }}); assignTask()"
                                         class="w-full bg-green-600 text-white px-2 py-1 rounded text-xs mt-2">
                                     Assign
                                 </button>

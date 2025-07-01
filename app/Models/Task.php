@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 
 class Task extends Model
 {
@@ -88,15 +89,23 @@ class Task extends Model
      */
     public function assignToUsers(array $userIds, $assignedDate = null, $dueDate = null): void
     {
-        $assignedDate = $assignedDate ?? now()->toDateString();
-        
+        $assignedDate = \Carbon\Carbon::parse($assignedDate ?? now())->startOfDay()->format('Y-m-d 00:00:00');
+        // Remove assignments for users not in the new list
+        TaskAssignment::where('task_id', $this->id)
+            ->where('assigned_date', $assignedDate)
+            ->whereNotIn('user_id', $userIds)
+            ->delete();
         foreach ($userIds as $userId) {
-            TaskAssignment::create([
-                'task_id' => $this->id,
-                'user_id' => $userId,
-                'assigned_date' => $assignedDate,
-                'due_date' => $dueDate ?? $this->due_date,
-            ]);
+            TaskAssignment::updateOrCreate(
+                [
+                    'task_id' => $this->id,
+                    'user_id' => $userId,
+                    'assigned_date' => $assignedDate,
+                ],
+                [
+                    'due_date' => $dueDate ?? $this->due_date,
+                ]
+            );
         }
     }
 }

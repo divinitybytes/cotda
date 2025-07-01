@@ -34,6 +34,10 @@ class TaskManager extends Component
     public $selectedUsers = [];
     public $assignmentDate = null;
     public $assignmentDueDate = null;
+    public $quickAssignUsers = [];
+    public $quickAssignDate = null;
+    public $quickAssignDueDate = null;
+    public $quickAssignTaskId = null;
 
     public function mount()
     {
@@ -57,7 +61,7 @@ class TaskManager extends Component
 
     public function editTask($taskId)
     {
-        $task = Task::findOrFail($taskId);
+        $task = Task::with('assignments')->findOrFail($taskId);
         $this->editingTask = $task;
         $this->title = $task->title;
         $this->description = $task->description;
@@ -65,6 +69,14 @@ class TaskManager extends Component
         $this->type = $task->type;
         $this->recurring_frequency = $task->recurring_frequency;
         $this->due_date = $task->due_date?->format('Y-m-d');
+        
+        // Pre-select users already assigned to this task (for any date)
+        $this->selectedUsers = $task->assignments->pluck('user_id')->unique()->toArray();
+        
+        // Default assignment date to today each time edit opens
+        $this->assignmentDate = now()->toDateString();
+        $this->assignmentDueDate = null;
+        
         $this->showCreateForm = true;
     }
 
@@ -90,8 +102,9 @@ class TaskManager extends Component
         }
 
         // Assign to selected users if any
-        if (!empty($this->selectedUsers)) {
-            $task->assignToUsers($this->selectedUsers, $this->assignmentDate, $this->assignmentDueDate);
+        $userIds = is_array($this->selectedUsers) ? $this->selectedUsers : (array) $this->selectedUsers;
+        if (!empty($userIds) && $userIds !== [false] && $userIds !== [null]) {
+            $task->assignToUsers($userIds, $this->assignmentDate, $this->assignmentDueDate);
         }
 
         $this->dispatch('task-saved');
@@ -108,16 +121,30 @@ class TaskManager extends Component
         session()->flash('message', 'Task deactivated successfully!');
     }
 
-    public function assignTask($taskId)
+    public function assignTask($taskId = null)
     {
+        // If called from quick-assign dropdown
+        if ($this->quickAssignTaskId) {
+            $task = Task::findOrFail($this->quickAssignTaskId);
+            if (empty($this->quickAssignUsers)) {
+                session()->flash('error', 'Please select at least one user.');
+                return;
+            }
+            $task->assignToUsers($this->quickAssignUsers, $this->quickAssignDate ?? now()->toDateString(), $this->quickAssignDueDate);
+            $this->quickAssignUsers = [];
+            $this->quickAssignDate = null;
+            $this->quickAssignDueDate = null;
+            $this->quickAssignTaskId = null;
+            session()->flash('message', 'Task assigned successfully!');
+            return;
+        }
+        // Fallback: original modal assign
         if (empty($this->selectedUsers)) {
             session()->flash('error', 'Please select at least one user.');
             return;
         }
-
         $task = Task::findOrFail($taskId);
         $task->assignToUsers($this->selectedUsers, $this->assignmentDate, $this->assignmentDueDate);
-        
         $this->selectedUsers = [];
         session()->flash('message', 'Task assigned successfully!');
     }
