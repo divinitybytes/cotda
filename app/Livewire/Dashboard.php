@@ -21,6 +21,7 @@ class Dashboard extends Component
     public $pendingTasks = 0;
     public $completedTasks = 0;
     public $recentAward = null;
+    public $showConfetti = false;
 
     public function mount()
     {
@@ -67,6 +68,11 @@ class Dashboard extends Component
             $this->recentAward = DailyAward::where('user_id', $user->id)
                 ->latest('award_date')
                 ->first();
+
+            // Check if user won today's award (show confetti)
+            $this->showConfetti = DailyAward::where('user_id', $user->id)
+                ->whereDate('award_date', $today)
+                ->exists();
         }
     }
 

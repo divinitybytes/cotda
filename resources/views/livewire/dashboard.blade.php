@@ -103,9 +103,9 @@
             <div class="bg-white rounded-lg p-4 shadow">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="font-semibold text-gray-900">Today's Progress</h2>
-                    @if($recentAward && $recentAward->award_date->isToday())
-                        <div class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
-                            🏆 Child of the Day!
+                    @if($showConfetti)
+                        <div class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                            🏆 Child of the Day! 🎉
                         </div>
                     @endif
                 </div>
@@ -245,5 +245,133 @@
         <div class="fixed bottom-4 left-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg">
             {{ session('error') }}
         </div>
+    @endif
+
+    @if(!$isAdmin && $showConfetti)
+        <!-- Confetti Animation for Daily Winner -->
+        <div id="confetti-container" class="fixed inset-0 pointer-events-none z-50"></div>
+        
+        <!-- Celebration Message -->
+        <div id="celebration-message" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-8 py-6 rounded-2xl shadow-2xl text-center max-w-sm mx-4 opacity-0 scale-75 transition-all duration-500">
+            <div class="text-4xl mb-2">🏆</div>
+            <h3 class="text-xl font-bold mb-1">Congratulations!</h3>
+            <p class="text-sm opacity-90">You're today's Child of the Day!</p>
+            <p class="text-xs opacity-75 mt-2">You earned $10.00 for being awesome! 🎉</p>
+        </div>
+        
+        <style>
+            .confetti {
+                position: absolute;
+                background-color: #f0c14b;
+                border-radius: 50%;
+                opacity: 0.9;
+                animation: confetti-fall linear infinite;
+            }
+            
+            .confetti:nth-child(odd) { background-color: #ff6b6b; }
+            .confetti:nth-child(3n) { background-color: #4ecdc4; }
+            .confetti:nth-child(4n) { background-color: #45b7d1; }
+            .confetti:nth-child(5n) { background-color: #96ceb4; }
+            .confetti:nth-child(6n) { background-color: #ffeaa7; }
+            .confetti:nth-child(7n) { background-color: #fd79a8; }
+            .confetti:nth-child(8n) { background-color: #fdcb6e; }
+            
+            @keyframes confetti-fall {
+                0% {
+                    transform: translateY(-100vh) rotate(0deg);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(100vh) rotate(720deg);
+                    opacity: 0;
+                }
+            }
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if we've already shown confetti today
+                const today = new Date().toDateString();
+                const confettiShown = sessionStorage.getItem('confetti_shown_' + today);
+                
+                if (!confettiShown) {
+                    // Wait a moment for the page to load, then start celebration
+                    setTimeout(function() {
+                        showCelebration();
+                        // Mark confetti as shown for this session
+                        sessionStorage.setItem('confetti_shown_' + today, 'true');
+                    }, 500);
+                }
+
+                function showCelebration() {
+                    // Show celebration message first
+                    const message = document.getElementById('celebration-message');
+                    if (message) {
+                        message.style.opacity = '1';
+                        message.style.transform = 'translate(-50%, -50%) scale(1)';
+                        
+                        // Hide message after 4 seconds
+                        setTimeout(() => {
+                            message.style.opacity = '0';
+                            message.style.transform = 'translate(-50%, -50%) scale(0.75)';
+                        }, 4000);
+                    }
+                    
+                    // Start confetti slightly after message appears
+                    setTimeout(() => {
+                        createConfetti();
+                    }, 300);
+                }
+
+                function createConfetti() {
+                    const container = document.getElementById('confetti-container');
+                    if (!container) return;
+                    
+                    const confettiCount = 100;
+                    const colors = ['#f0c14b', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#fd79a8', '#fdcb6e'];
+                    
+                    for (let i = 0; i < confettiCount; i++) {
+                        setTimeout(() => {
+                            const confetti = document.createElement('div');
+                            confetti.className = 'confetti';
+                            
+                            // Random size between 4px and 12px
+                            const size = Math.random() * 8 + 4;
+                            confetti.style.width = size + 'px';
+                            confetti.style.height = size + 'px';
+                            
+                            // Random horizontal position
+                            confetti.style.left = Math.random() * 100 + '%';
+                            
+                            // Random color
+                            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                            
+                            // Random animation duration between 2-4 seconds
+                            const duration = Math.random() * 2 + 2;
+                            confetti.style.animationDuration = duration + 's';
+                            
+                            // Random delay
+                            confetti.style.animationDelay = Math.random() * 2 + 's';
+                            
+                            container.appendChild(confetti);
+                            
+                            // Remove confetti after animation
+                            setTimeout(() => {
+                                if (confetti.parentNode) {
+                                    confetti.parentNode.removeChild(confetti);
+                                }
+                            }, (duration + 2) * 1000);
+                        }, i * 50); // Stagger the creation
+                    }
+                    
+                    // Clean up container after all animations
+                    setTimeout(() => {
+                        if (container) {
+                            container.innerHTML = '';
+                        }
+                    }, 8000);
+                }
+            });
+        </script>
     @endif
 </div>
