@@ -215,8 +215,8 @@ self.addEventListener('push', event => {
     
     const options = {
       body: data.body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      icon: '/app_icons/icon-192x192.png',
+      badge: '/app_icons/icon-72x72.png',
       vibrate: [100, 50, 100],
       data: {
         dateOfArrival: Date.now(),
@@ -226,12 +226,12 @@ self.addEventListener('push', event => {
         {
           action: 'explore',
           title: 'View Tasks',
-          icon: '/icons/tasks-shortcut.png'
+          icon: '/app_icons/tasks-shortcut.png'
         },
         {
           action: 'close',
           title: 'Close',
-          icon: '/icons/close-icon.png'
+          icon: '/app_icons/close-icon.png'
         }
       ]
     };
