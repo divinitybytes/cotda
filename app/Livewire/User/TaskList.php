@@ -5,6 +5,7 @@ namespace App\Livewire\User;
 use Livewire\Component;
 use App\Models\TaskAssignment;
 use App\Models\TaskCompletion as TaskCompletionModel;
+use App\Services\RecurringTaskService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\WithPagination;
 
@@ -13,6 +14,12 @@ class TaskList extends Component
     use WithPagination;
 
     public $filter = 'pending'; // pending, completed, all
+
+    public function mount()
+    {
+        // Ensure user has fresh recurring task assignments
+        RecurringTaskService::createUserRecurringAssignments(Auth::user());
+    }
 
     public function setFilter($filter)
     {

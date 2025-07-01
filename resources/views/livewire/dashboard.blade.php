@@ -73,6 +73,10 @@
                 <a href="{{ route('admin.point-adjustments') }}" class="block bg-purple-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-purple-700">
                     ⚡ Point Adjustments
                 </a>
+                
+                <button wire:click="createTodaysRecurringTasks" class="block w-full bg-teal-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-teal-700">
+                    🔄 Create Today's Recurring Tasks
+                </button>
             </div>
 
             @if($recentCompletions->count() > 0)

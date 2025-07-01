@@ -10,6 +10,7 @@ use App\Models\TaskCompletion;
 use App\Models\DailyAward;
 use App\Models\CashOutRequest;
 use App\Models\PointAdjustment;
+use App\Services\RecurringTaskService;
 use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends Component
@@ -25,7 +26,29 @@ class Dashboard extends Component
 
     public function mount()
     {
+        $user = Auth::user();
+        
+        // For regular users, ensure they have fresh recurring task assignments
+        if ($user->isUser()) {
+            RecurringTaskService::createUserRecurringAssignments($user);
+        }
+        
         $this->loadUserStats();
+    }
+
+    public function createTodaysRecurringTasks()
+    {
+        if (!Auth::user()->isAdmin()) {
+            return;
+        }
+
+        $created = RecurringTaskService::createRecurringAssignments();
+        
+        if ($created > 0) {
+            session()->flash('message', "Created {$created} recurring task assignments for today!");
+        } else {
+            session()->flash('message', 'All recurring task assignments are up to date.');
+        }
     }
 
     public function loadUserStats()
