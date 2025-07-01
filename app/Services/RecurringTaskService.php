@@ -100,6 +100,16 @@ class RecurringTaskService
             return false;
         }
 
+        // Ensure task belongs to this user (i.e., they have had this task before)
+        $hasEverBeenAssigned = TaskAssignment::where('task_id', $task->id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$hasEverBeenAssigned) {
+            // This task was never assigned to this user before, skip auto-creation.
+            return false;
+        }
+
         // Check if this user should get this recurring task based on frequency
         return self::shouldAssignBasedOnFrequency($task, $user, $date);
     }
