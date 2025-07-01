@@ -134,6 +134,9 @@ class TaskVerification extends Component
                 'admin_notes' => $adminNotes
             ]);
             
+            // Mark assignment as completed
+            $completion->assignment->markCompleted();
+            
             // Award points to user
             $completion->assignment->user->increment('points', $completion->assignment->task->points);
             
@@ -173,6 +176,9 @@ class TaskVerification extends Component
                 'admin_notes' => 'Bulk approved'
             ]);
             
+            // Mark assignment as completed
+            $completion->assignment->markCompleted();
+            
             // Award points to user
             $completion->assignment->user->increment('points', $completion->assignment->task->points);
         }
@@ -201,8 +207,6 @@ class TaskVerification extends Component
         session()->flash('message', 'All pending completions rejected.');
         $this->hideBulkRejectModal();
     }
-
-
 
     public function setFilter($filter)
     {

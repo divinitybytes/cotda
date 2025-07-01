@@ -36,9 +36,9 @@ class TaskList extends Component
         // Apply filter
         switch ($this->filter) {
             case 'pending':
-                // Show tasks that are not completed OR have pending verification
+                // Show tasks that have no completion yet OR have a pending completion
                 $query->where(function($q) {
-                    $q->where('is_completed', false)
+                    $q->whereDoesntHave('completion')
                       ->orWhereHas('completion', function($completionQuery) {
                           $completionQuery->where('verification_status', 'pending');
                       });
@@ -62,7 +62,7 @@ class TaskList extends Component
             'pending' => TaskAssignment::where('user_id', Auth::id())
                 ->whereDate('assigned_date', now()->toDateString())
                 ->where(function($q) {
-                    $q->where('is_completed', false)
+                    $q->whereDoesntHave('completion')
                       ->orWhereHas('completion', function($completionQuery) {
                           $completionQuery->where('verification_status', 'pending');
                       });

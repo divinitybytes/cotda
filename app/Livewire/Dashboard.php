@@ -82,7 +82,7 @@ class Dashboard extends Component
             $this->pendingTasks = TaskAssignment::where('user_id', $user->id)
                 ->whereDate('assigned_date', now()->toDateString())
                 ->where(function($q) {
-                    $q->where('is_completed', false)
+                    $q->whereDoesntHave('completion')
                       ->orWhereHas('completion', function($completionQuery) {
                           $completionQuery->where('verification_status', 'pending');
                       });
@@ -135,7 +135,7 @@ class Dashboard extends Component
                 ->where('user_id', $user->id)
                 ->whereDate('assigned_date', now()->toDateString())
                 ->where(function($q) {
-                    $q->where('is_completed', false)
+                    $q->whereDoesntHave('completion')
                       ->orWhereHas('completion', function($completionQuery) {
                           $completionQuery->where('verification_status', 'pending');
                       });
