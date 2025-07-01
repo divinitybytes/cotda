@@ -22,6 +22,12 @@
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="application-name" content="CotDA">
         
+        <!-- Cache Control -->
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <meta name="cache-bust" content="{{ now()->timestamp }}">
+        
         <!-- PWA Manifest -->
         <link rel="manifest" href="/manifest.json">
         
@@ -163,6 +169,55 @@
                        document.referrer.includes('android-app://');
             }
             
+            // Utility function to clear service worker cache
+            async function clearAppCache() {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const messageChannel = new MessageChannel();
+                    
+                    return new Promise((resolve) => {
+                        messageChannel.port1.onmessage = (event) => {
+                            resolve(event.data.success);
+                        };
+                        
+                        navigator.serviceWorker.controller.postMessage(
+                            { type: 'CLEAR_CACHE' },
+                            [messageChannel.port2]
+                        );
+                    });
+                }
+                return false;
+            }
+            
+            // Add cache clearing to Livewire before requests
+            document.addEventListener('livewire:init', () => {
+                // Clear cache before major navigation
+                Livewire.hook('morph.updating', () => {
+                    // Add timestamp to force fresh requests
+                    const timestamp = Date.now();
+                    document.body.setAttribute('data-cache-bust', timestamp);
+                });
+                
+                // Log when components update to help debug stale data
+                Livewire.hook('component.init', (component) => {
+                    console.log('Livewire component initialized:', component.name);
+                });
+            });
+            
+            // Force cache clear on page focus (when user returns to app)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    console.log('App regained focus - ensuring fresh data');
+                    // Add a small delay to ensure service worker is ready
+                    setTimeout(() => {
+                        clearAppCache().then(success => {
+                            if (success) {
+                                console.log('Cache cleared on app focus');
+                            }
+                        });
+                    }, 100);
+                }
+            });
+            
             // Register Service Worker
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
@@ -175,10 +230,12 @@
                                 const newWorker = registration.installing;
                                 newWorker.addEventListener('statechange', () => {
                                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                        // New content is available, prompt user to refresh
-                                        if (confirm('A new version is available! Refresh to update?')) {
-                                            window.location.reload();
-                                        }
+                                        // Clear cache and prompt for update
+                                        clearAppCache().then(() => {
+                                            if (confirm('A new version is available! Refresh to update?')) {
+                                                window.location.reload();
+                                            }
+                                        });
                                     }
                                 });
                             });
@@ -199,6 +256,14 @@
                 e.preventDefault();
                 console.log('PWA install prompt prevented (no UI shown)');
             });
+            
+            // Debug helper - add to window for manual cache clearing
+            window.clearAppCache = clearAppCache;
+            window.forceRefresh = () => {
+                clearAppCache().then(() => {
+                    window.location.reload();
+                });
+            };
         </script>
         
         <!-- Auto-hide flash messages -->

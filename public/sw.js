@@ -1,6 +1,6 @@
-const CACHE_NAME = 'chore-tracker-v1.2';
-const STATIC_CACHE = 'chore-tracker-static-v1.2';
-const DYNAMIC_CACHE = 'chore-tracker-dynamic-v1.2';
+const CACHE_NAME = 'chore-tracker-v2.0';
+const STATIC_CACHE = 'chore-tracker-static-v2.0';
+const DYNAMIC_CACHE = 'chore-tracker-dynamic-v2.0';
 
 // Files to cache immediately
 const STATIC_FILES = [
@@ -49,18 +49,22 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cache => {
           if (cache !== STATIC_CACHE && cache !== DYNAMIC_CACHE) {
-            console.log('Service Worker: Clearing old cache');
+            console.log('Service Worker: Clearing old cache', cache);
             return caches.delete(cache);
           }
         })
       );
+    }).then(() => {
+      // Clear dynamic cache on activation to ensure fresh data
+      console.log('Service Worker: Clearing dynamic cache for fresh start');
+      return caches.delete(DYNAMIC_CACHE);
     })
   );
   // Ensure the service worker takes control immediately
   self.clients.claim();
 });
 
-// Fetch event - serve cached content when offline
+// Fetch event - smart caching strategy
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
@@ -77,51 +81,116 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request)
-      .then(response => {
-        // Return cached version if available
-        if (response) {
-          console.log('Service Worker: Serving from cache', request.url);
-          return response;
-        }
+  // Determine if this is a static asset or dynamic content
+  const isStaticAsset = url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i) ||
+                        STATIC_FILES.includes(url.pathname) ||
+                        url.hostname.includes('cdn.tailwindcss.com') ||
+                        url.hostname.includes('unpkg.com');
 
-        // Otherwise fetch from network
-        return fetch(request)
-          .then(fetchResponse => {
-            // Don't cache if not successful
-            if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
+  // Check if this is a Livewire request or dynamic route
+  const isDynamicContent = url.pathname.includes('/livewire/') ||
+                          url.search.includes('_token') ||
+                          url.pathname.includes('/dashboard') ||
+                          url.pathname.includes('/user/') ||
+                          url.pathname.includes('/admin/') ||
+                          request.headers.get('X-Livewire') ||
+                          request.headers.get('X-Requested-With') === 'XMLHttpRequest' ||
+                          request.headers.get('Cache-Control') === 'no-cache';
+
+  if (isStaticAsset) {
+    // Cache-first strategy for static assets
+    event.respondWith(
+      caches.match(request)
+        .then(response => {
+          if (response) {
+            console.log('Service Worker: Serving static asset from cache', request.url);
+            return response;
+          }
+
+          return fetch(request)
+            .then(fetchResponse => {
+              if (fetchResponse && fetchResponse.status === 200) {
+                const responseToCache = fetchResponse.clone();
+                caches.open(STATIC_CACHE)
+                  .then(cache => {
+                    console.log('Service Worker: Caching static asset', request.url);
+                    cache.put(request, responseToCache);
+                  });
+              }
               return fetchResponse;
-            }
-
-            // Clone the response
+            })
+            .catch(() => {
+              return caches.match(request);
+            });
+        })
+    );
+  } else if (isDynamicContent) {
+    // Network-first strategy for dynamic content - always try to get fresh data
+    event.respondWith(
+      fetch(request)
+        .then(fetchResponse => {
+          console.log('Service Worker: Serving fresh dynamic content', request.url);
+          return fetchResponse;
+        })
+        .catch(() => {
+          // Only serve cached dynamic content if network fails
+          console.log('Service Worker: Network failed, trying cache for', request.url);
+          return caches.match(request)
+            .then(response => {
+              if (response) {
+                console.log('Service Worker: Serving stale dynamic content from cache', request.url);
+                return response;
+              }
+              
+              // If it's a navigation request and no cache, return offline page
+              if (request.mode === 'navigate') {
+                return caches.match('/');
+              }
+              
+              throw new Error('No cache available');
+            });
+        })
+    );
+  } else {
+    // Network-first for other content (HTML pages, etc.)
+    event.respondWith(
+      fetch(request)
+        .then(fetchResponse => {
+          if (fetchResponse && fetchResponse.status === 200) {
+            // Only cache successful responses
             const responseToCache = fetchResponse.clone();
-
-            // Determine which cache to use
-            const cacheName = STATIC_FILES.includes(url.pathname) ? STATIC_CACHE : DYNAMIC_CACHE;
-
-            // Cache the response
-            caches.open(cacheName)
+            caches.open(DYNAMIC_CACHE)
               .then(cache => {
-                console.log('Service Worker: Caching new resource', request.url);
+                console.log('Service Worker: Caching page', request.url);
                 cache.put(request, responseToCache);
               });
-
-            return fetchResponse;
-          })
-          .catch(() => {
-            // If fetch fails and it's a navigation request, return offline page
-            if (request.mode === 'navigate') {
-              return caches.match('/');
-            }
-            
-            // For images, return a placeholder if available
-            if (request.destination === 'image') {
-              return caches.match('/icons/icon-192x192.png');
-            }
-          });
-      })
-  );
+          }
+          return fetchResponse;
+        })
+        .catch(() => {
+          // Fallback to cache
+          return caches.match(request)
+            .then(response => {
+              if (response) {
+                console.log('Service Worker: Serving from cache (offline)', request.url);
+                return response;
+              }
+              
+              // For images, return a placeholder if available
+              if (request.destination === 'image') {
+                return caches.match('/icons/icon-192x192.png');
+              }
+              
+              // If it's a navigation request, return cached home page
+              if (request.mode === 'navigate') {
+                return caches.match('/');
+              }
+              
+              throw new Error('No cache available');
+            });
+        })
+    );
+  }
 });
 
 // Background sync for offline form submissions
@@ -198,6 +267,28 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  } else if (event.data && event.data.type === 'CLEAR_CACHE') {
+    console.log('Service Worker: Clearing cache on request');
+    event.waitUntil(
+      caches.delete(DYNAMIC_CACHE).then(() => {
+        console.log('Service Worker: Dynamic cache cleared');
+        // Notify the client that cache was cleared
+        event.ports[0].postMessage({ success: true });
+      })
+    );
+  } else if (event.data && event.data.type === 'CLEAR_ALL_CACHE') {
+    console.log('Service Worker: Clearing all caches on request');
+    event.waitUntil(
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cache => caches.delete(cache))
+        );
+      }).then(() => {
+        console.log('Service Worker: All caches cleared');
+        // Notify the client that cache was cleared
+        event.ports[0].postMessage({ success: true });
+      })
+    );
   }
 });
 
