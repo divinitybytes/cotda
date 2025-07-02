@@ -52,3 +52,151 @@
     position: relative;
     z-index: 2;
 }
+
+/* Prize Wheel Styles */
+.clip-triangle {
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.prize-slice {
+    width: 50%;
+    height: 50%;
+    transform-origin: 100% 100%;
+}
+
+/* Prize wheel slice styling */
+.wheel-slice {
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transform-origin: center center;
+}
+
+.text-shadow {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Remove the constantly spinning animation - we'll handle this with JavaScript */
+
+.pulse-button {
+    animation: buttonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(255, 193, 7, 0.8);
+    }
+}
+
+/* Sparkle animations */
+.sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    animation: sparkleAnimation 2s ease-in-out infinite;
+}
+
+.sparkle-1 { top: 10%; left: 10%; animation-delay: 0s; }
+.sparkle-2 { top: 20%; right: 15%; animation-delay: 0.4s; }
+.sparkle-3 { bottom: 20%; left: 20%; animation-delay: 0.8s; }
+.sparkle-4 { bottom: 15%; right: 10%; animation-delay: 1.2s; }
+.sparkle-5 { top: 50%; left: 5%; animation-delay: 1.6s; }
+
+@keyframes sparkleAnimation {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Confetti animations */
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    animation: confettiAnimation 3s ease-out infinite;
+}
+
+.confetti-1 {
+    background: #ff6b6b;
+    top: -10px;
+    left: 20%;
+    animation-delay: 0s;
+}
+
+.confetti-2 {
+    background: #4ecdc4;
+    top: -10px;
+    left: 40%;
+    animation-delay: 0.5s;
+}
+
+.confetti-3 {
+    background: #45b7d1;
+    top: -10px;
+    left: 60%;
+    animation-delay: 1s;
+}
+
+.confetti-4 {
+    background: #f9ca24;
+    top: -10px;
+    left: 80%;
+    animation-delay: 1.5s;
+}
+
+.confetti-5 {
+    background: #f0932b;
+    top: -10px;
+    left: 10%;
+    animation-delay: 2s;
+}
+
+@keyframes confettiAnimation {
+    0% {
+        transform: translateY(-10px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(400px) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.prize-modal {
+    animation: prizeModalPop 0.5s ease-out;
+}
+
+@keyframes prizeModalPop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.prize-wheel-button {
+    animation: prizeWheelGlow 2s ease-in-out infinite;
+}
+
+@keyframes prizeWheelGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(168, 85, 247, 0.8);
+    }
+}

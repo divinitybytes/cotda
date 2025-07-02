@@ -186,6 +186,11 @@
                 </a>
             </div>
 
+            <!-- Prize Wheel -->
+            <div class="mt-4">
+                @livewire('user.prize-wheel')
+            </div>
+
             @if($pendingAssignments->count() > 0)
                 <!-- Pending Tasks -->
                 <div class="bg-white rounded-lg shadow">

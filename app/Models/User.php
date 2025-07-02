@@ -115,6 +115,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get prize wheel spins for this user
+     */
+    public function prizeWheelSpins(): HasMany
+    {
+        return $this->hasMany(\App\Models\PrizeWheelSpin::class);
+    }
+
+    /**
      * Get user balance
      */
     public function balance(): HasOne
