@@ -7,6 +7,8 @@ use App\Livewire\Admin\TaskVerification;
 use App\Livewire\Admin\CashOutManager;
 use App\Livewire\Admin\DailyWinnerManager;
 use App\Livewire\Admin\PointAdjustments;
+use App\Livewire\Admin\SpotBonusManager;
+use App\Livewire\Admin\UserBalanceOverview;
 use App\Livewire\User\TaskList;
 use App\Livewire\User\UserBalance;
 use App\Livewire\User\Rankings;
@@ -34,6 +36,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/cash-out', CashOutManager::class)->name('cash-out');
         Route::get('/daily-winner', DailyWinnerManager::class)->name('daily-winner');
         Route::get('/point-adjustments', PointAdjustments::class)->name('point-adjustments');
+        Route::get('/spot-bonuses', SpotBonusManager::class)->name('spot-bonuses');
+        Route::get('/user-balances', UserBalanceOverview::class)->name('user-balances');
     });
 });
 

@@ -99,6 +99,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get spot bonuses for this user
+     */
+    public function spotBonuses(): HasMany
+    {
+        return $this->hasMany(SpotBonus::class);
+    }
+
+    /**
+     * Get spot bonuses awarded by this admin
+     */
+    public function awardedSpotBonuses(): HasMany
+    {
+        return $this->hasMany(SpotBonus::class, 'admin_id');
+    }
+
+    /**
      * Get user balance
      */
     public function balance(): HasOne

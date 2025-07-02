@@ -53,6 +53,35 @@ class UserBalance extends Model
     }
 
     /**
+     * Add a spot bonus to the balance
+     */
+    public function addSpotBonus(SpotBonus $bonus): void
+    {
+        $this->increment('total_earned', $bonus->cash_amount);
+        $this->increment('total_awards');
+        $this->increment('current_balance', $bonus->cash_amount);
+
+        // Set first award date if this is the first award (kept for display purposes)
+        if (!$this->first_award_date) {
+            $this->update(['first_award_date' => $bonus->bonus_date]);
+        }
+
+        $this->updateVestedAmount();
+    }
+
+    /**
+     * Remove a spot bonus from the balance
+     */
+    public function removeSpotBonus(SpotBonus $bonus): void
+    {
+        $this->decrement('total_earned', $bonus->cash_amount);
+        $this->decrement('total_awards');
+        $this->decrement('current_balance', $bonus->cash_amount);
+        
+        $this->updateVestedAmount();
+    }
+
+    /**
      * Update vested amount based on individual award vesting periods
      */
     public function updateVestedAmount(): void
@@ -63,15 +92,20 @@ class UserBalance extends Model
     }
 
     /**
-     * Calculate total vested amount from all individual awards
+     * Calculate total vested amount from all individual awards and bonuses
      */
     public function calculateTotalVestedAmount(): float
     {
         $dailyAwards = DailyAward::where('user_id', $this->user_id)->get();
+        $spotBonuses = SpotBonus::where('user_id', $this->user_id)->get();
         $totalVested = 0;
 
         foreach ($dailyAwards as $award) {
             $totalVested += $this->calculateAwardVestedAmount($award);
+        }
+
+        foreach ($spotBonuses as $bonus) {
+            $totalVested += $this->calculateBonusVestedAmount($bonus);
         }
 
         return $totalVested;
@@ -87,6 +121,18 @@ class UserBalance extends Model
         
         $vestingPercentage = min(100, ($daysElapsed / $vestingDays) * 100);
         return ($award->cash_amount * $vestingPercentage) / 100;
+    }
+
+    /**
+     * Calculate vested amount for a single spot bonus
+     */
+    public function calculateBonusVestedAmount(SpotBonus $bonus): float
+    {
+        $daysElapsed = $bonus->bonus_date->diffInDays(now());
+        $vestingDays = 180; // 6 months vesting period per bonus
+        
+        $vestingPercentage = min(100, ($daysElapsed / $vestingDays) * 100);
+        return ($bonus->cash_amount * $vestingPercentage) / 100;
     }
 
     /**
@@ -112,20 +158,36 @@ class UserBalance extends Model
     }
 
     /**
-     * Get days until the next award becomes fully vested
+     * Get days until the next award/bonus becomes fully vested
      */
     public function getDaysUntilFullyVested(): int
     {
         $dailyAwards = DailyAward::where('user_id', $this->user_id)
             ->orderBy('award_date', 'asc')
             ->get();
+        
+        $spotBonuses = SpotBonus::where('user_id', $this->user_id)
+            ->orderBy('bonus_date', 'asc')
+            ->get();
 
-        if ($dailyAwards->isEmpty()) {
+        $allDates = [];
+        
+        foreach ($dailyAwards as $award) {
+            $allDates[] = $award->award_date;
+        }
+        
+        foreach ($spotBonuses as $bonus) {
+            $allDates[] = $bonus->bonus_date;
+        }
+
+        if (empty($allDates)) {
             return 180;
         }
 
-        foreach ($dailyAwards as $award) {
-            $daysElapsed = $award->award_date->diffInDays(now());
+        sort($allDates);
+
+        foreach ($allDates as $date) {
+            $daysElapsed = $date->diffInDays(now());
             $vestingDays = 180;
             
             if ($daysElapsed < $vestingDays) {
@@ -133,7 +195,7 @@ class UserBalance extends Model
             }
         }
 
-        return 0; // All awards are fully vested
+        return 0; // All awards/bonuses are fully vested
     }
 
     /**
@@ -153,8 +215,9 @@ class UserBalance extends Model
         
         if ($vestedAmount > 0) {
             // User forfeits ALL balance and only gets the vested amount
-            // Delete all associated daily awards since they're being cashed out
+            // Delete all associated daily awards and spot bonuses since they're being cashed out
             DailyAward::where('user_id', $this->user_id)->delete();
+            SpotBonus::where('user_id', $this->user_id)->delete();
             
             // Reset all balance fields to 0
             $this->update([
@@ -177,7 +240,12 @@ class UserBalance extends Model
             ->orderBy('award_date', 'desc')
             ->get();
 
+        $spotBonuses = SpotBonus::where('user_id', $this->user_id)
+            ->orderBy('bonus_date', 'desc')
+            ->get();
+
         $details = [];
+        
         foreach ($dailyAwards as $award) {
             $daysElapsed = $award->award_date->diffInDays(now());
             $vestingDays = 180;
@@ -186,6 +254,7 @@ class UserBalance extends Model
             $unvestedAmount = $award->cash_amount - $vestedAmount;
 
             $details[] = [
+                'type' => 'daily_award',
                 'award_date' => $award->award_date,
                 'cash_amount' => $award->cash_amount,
                 'days_elapsed' => $daysElapsed,
@@ -193,8 +262,34 @@ class UserBalance extends Model
                 'vested_amount' => $vestedAmount,
                 'unvested_amount' => $unvestedAmount,
                 'days_until_fully_vested' => max(0, $vestingDays - $daysElapsed),
+                'description' => 'Child of the Day',
             ];
         }
+
+        foreach ($spotBonuses as $bonus) {
+            $daysElapsed = $bonus->bonus_date->diffInDays(now());
+            $vestingDays = 180;
+            $vestingPercentage = min(100, ($daysElapsed / $vestingDays) * 100);
+            $vestedAmount = $this->calculateBonusVestedAmount($bonus);
+            $unvestedAmount = $bonus->cash_amount - $vestedAmount;
+
+            $details[] = [
+                'type' => 'spot_bonus',
+                'award_date' => $bonus->bonus_date,
+                'cash_amount' => $bonus->cash_amount,
+                'days_elapsed' => $daysElapsed,
+                'vesting_percentage' => $vestingPercentage,
+                'vested_amount' => $vestedAmount,
+                'unvested_amount' => $unvestedAmount,
+                'days_until_fully_vested' => max(0, $vestingDays - $daysElapsed),
+                'description' => $bonus->reason,
+            ];
+        }
+
+        // Sort by date descending
+        usort($details, function($a, $b) {
+            return $b['award_date']->compare($a['award_date']);
+        });
 
         return $details;
     }

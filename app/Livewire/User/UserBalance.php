@@ -81,20 +81,38 @@ class UserBalance extends Component
 
     public function render()
     {
-        $recentAwards = DailyAward::where('user_id', Auth::id())
+        $recentDailyAwards = DailyAward::where('user_id', Auth::id())
             ->with('user')
             ->latest('award_date')
-            ->take(10)
             ->get();
+
+        $recentSpotBonuses = \App\Models\SpotBonus::where('user_id', Auth::id())
+            ->with('user')
+            ->latest('bonus_date')
+            ->get();
+
+        // Combine and sort both types of awards
+        $recentAwards = $recentDailyAwards->concat($recentSpotBonuses)
+            ->sortByDesc(function($award) {
+                return $award instanceof DailyAward ? $award->award_date : $award->bonus_date;
+            })
+            ->take(10);
 
         $monthlyEarnings = DailyAward::where('user_id', Auth::id())
             ->whereMonth('award_date', now()->month)
             ->whereYear('award_date', now()->year)
-            ->sum('cash_amount');
+            ->sum('cash_amount') +
+            \App\Models\SpotBonus::where('user_id', Auth::id())
+                ->whereMonth('bonus_date', now()->month)
+                ->whereYear('bonus_date', now()->year)
+                ->sum('cash_amount');
 
         $yearlyEarnings = DailyAward::where('user_id', Auth::id())
             ->whereYear('award_date', now()->year)
-            ->sum('cash_amount');
+            ->sum('cash_amount') +
+            \App\Models\SpotBonus::where('user_id', Auth::id())
+                ->whereYear('bonus_date', now()->year)
+                ->sum('cash_amount');
 
         $recentCashOutRequests = CashOutRequest::where('user_id', Auth::id())
             ->with('processedBy')

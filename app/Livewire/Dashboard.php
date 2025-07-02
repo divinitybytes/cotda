@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\TaskAssignment;
 use App\Models\TaskCompletion;
 use App\Models\DailyAward;
+use App\Models\SpotBonus;
 use App\Models\CashOutRequest;
 use App\Models\PointAdjustment;
 use App\Services\RecurringTaskService;
@@ -23,6 +24,7 @@ class Dashboard extends Component
     public $completedTasks = 0;
     public $recentAward = null;
     public $showConfetti = false;
+    public $receivedSpotBonusToday = false;
 
     public function mount()
     {
@@ -104,6 +106,11 @@ class Dashboard extends Component
             // Check if user won today's award (show confetti)
             $this->showConfetti = DailyAward::where('user_id', $user->id)
                 ->whereDate('award_date', $today)
+                ->exists();
+
+            // Check if user received a spot bonus today (for shimmer effect)
+            $this->receivedSpotBonusToday = SpotBonus::where('user_id', $user->id)
+                ->whereDate('bonus_date', $today)
                 ->exists();
         }
     }

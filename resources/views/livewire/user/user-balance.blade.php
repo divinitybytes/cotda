@@ -119,9 +119,15 @@
                     @foreach($recentAwards as $award)
                         <div class="p-4 border-b last:border-b-0 flex items-center justify-between">
                             <div>
-                                <div class="font-medium">🏆 Child of the Day</div>
-                                <div class="text-sm text-gray-600">{{ $award->award_date->format('M j, Y') }}</div>
-                                <div class="text-xs text-gray-500">{{ $award->points_earned }} points earned</div>
+                                @if($award instanceof \App\Models\DailyAward)
+                                    <div class="font-medium">🏆 Child of the Day</div>
+                                    <div class="text-sm text-gray-600">{{ $award->award_date->format('M j, Y') }}</div>
+                                    <div class="text-xs text-gray-500">{{ $award->points_earned }} points earned</div>
+                                @else
+                                    <div class="font-medium">💰 Spot Bonus</div>
+                                    <div class="text-sm text-gray-600">{{ $award->bonus_date->format('M j, Y') }}</div>
+                                    <div class="text-xs text-gray-500">{{ $award->reason }}</div>
+                                @endif
                             </div>
                             <div class="text-lg font-bold text-green-600">
                                 +${{ number_format($award->cash_amount, 2) }}
@@ -183,7 +189,9 @@
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 class="font-semibold text-blue-900 mb-2">💡 How Vesting Works</h4>
             <div class="text-sm text-blue-800 space-y-1">
-                                    <p>• Each $10 award vests individually over 180 days (6 months)</p>
+                <p>• Each award and bonus vests individually over 180 days (6 months)</p>
+                <p>• Daily awards (🏆) are $10 for being Child of the Day</p>
+                <p>• Spot bonuses (💰) are one-time awards from admins</p>
                 <p>• You can cash out your total vested amount anytime</p>
                 <p>• ⚠️ Cashing out forfeits ALL remaining unvested amounts</p>
                 <p>• Awards continue vesting daily until fully vested</p>
@@ -232,8 +240,20 @@
                                 @foreach($vestingDetails as $detail)
                                     <div class="flex justify-between items-center">
                                         <div>
-                                            <div class="font-medium">{{ $detail['award_date']->format('M j, Y') }}</div>
-                                            <div class="text-gray-600">{{ number_format($detail['vesting_percentage'], 1) }}% vested</div>
+                                            <div class="font-medium">
+                                                {{ $detail['award_date']->format('M j, Y') }}
+                                                @if($detail['type'] === 'spot_bonus')
+                                                    <span class="inline-block ml-1 text-orange-600">💰</span>
+                                                @else
+                                                    <span class="inline-block ml-1 text-yellow-600">🏆</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-gray-600">
+                                                {{ number_format($detail['vesting_percentage'], 1) }}% vested
+                                                @if($detail['type'] === 'spot_bonus')
+                                                    • {{ Str::limit($detail['description'], 20) }}
+                                                @endif
+                                            </div>
                                         </div>
                                         <div class="text-right">
                                             <div class="text-green-600">${{ number_format($detail['vested_amount'], 2) }}</div>

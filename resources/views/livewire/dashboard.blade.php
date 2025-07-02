@@ -74,6 +74,14 @@
                     ⚡ Point Adjustments
                 </a>
                 
+                <a href="{{ route('admin.spot-bonuses') }}" class="block bg-orange-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-orange-700">
+                    💰 Spot Bonuses
+                </a>
+                
+                <a href="{{ route('admin.user-balances') }}" class="block bg-indigo-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-indigo-700">
+                    💳 User Balances
+                </a>
+                
                 <button wire:click="createTodaysRecurringTasks" class="block w-full bg-teal-600 text-white rounded-lg p-4 text-center font-semibold hover:bg-teal-700">
                     🔄 Create Today's Recurring Tasks
                 </button>
@@ -132,11 +140,24 @@
 
             <!-- Cash Balance (if exists) -->
             @if($balance)
-                <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-4 text-white shadow">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-4 text-white shadow {{ $receivedSpotBonusToday ? 'spot-bonus-shimmer' : '' }}">
                     <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-semibold">Cash Balance</h3>
+                        <h3 class="font-semibold">
+                            Cash Balance
+                            @if($receivedSpotBonusToday)
+                                <span class="text-yellow-300 ml-1">💰✨</span>
+                            @endif
+                        </h3>
                         <a href="{{ route('user.balance') }}" class="text-sm underline">View Details</a>
                     </div>
+                    
+                    @if($receivedSpotBonusToday)
+                        <div class="bg-yellow-400 bg-opacity-20 rounded-lg p-2 mb-3 border border-yellow-300 border-opacity-30">
+                            <div class="text-center text-sm font-medium text-yellow-100">
+                                🎉 You received a Spot Bonus today! 🎉
+                            </div>
+                        </div>
+                    @endif
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>

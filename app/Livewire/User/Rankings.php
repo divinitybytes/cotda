@@ -13,10 +13,67 @@ use Illuminate\Support\Facades\DB;
 class Rankings extends Component
 {
     public $timeframe = 'today'; // today, week, month, all_time
+    public $selectedUserId = null;
+    public $selectedUserTasks = [];
+    public $selectedUserName = '';
+    public $showTaskModal = false;
 
     public function setTimeframe($timeframe)
     {
         $this->timeframe = $timeframe;
+    }
+
+    public function showUserTasks($userId)
+    {
+        $this->selectedUserId = $userId;
+        $user = User::find($userId);
+        $this->selectedUserName = $user->name;
+        
+        // Fetch user's completed tasks for the current timeframe
+        $this->selectedUserTasks = $this->getUserCompletedTasks($userId);
+        $this->showTaskModal = true;
+    }
+
+    public function closeTaskModal()
+    {
+        $this->showTaskModal = false;
+        $this->selectedUserId = null;
+        $this->selectedUserTasks = [];
+        $this->selectedUserName = '';
+    }
+
+    private function getUserCompletedTasks($userId)
+    {
+        $query = TaskCompletionModel::where('task_completions.user_id', $userId)
+            ->where('verification_status', 'approved')
+            ->join('task_assignments', 'task_completions.task_assignment_id', '=', 'task_assignments.id')
+            ->join('tasks', 'task_assignments.task_id', '=', 'tasks.id')
+            ->select([
+                'tasks.title',
+                'tasks.points',
+                'task_completions.completed_at',
+                'task_completions.completion_notes'
+            ]);
+
+        // Apply timeframe filter
+        switch ($this->timeframe) {
+            case 'today':
+                $query->whereDate('task_completions.completed_at', now());
+                break;
+            case 'week':
+                $query->whereBetween('task_completions.completed_at', [
+                    now()->startOfWeek(),
+                    now()->endOfWeek()
+                ]);
+                break;
+            case 'month':
+                $query->whereMonth('task_completions.completed_at', now()->month)
+                     ->whereYear('task_completions.completed_at', now()->year);
+                break;
+            // 'all_time' has no additional filter
+        }
+
+        return $query->orderBy('task_completions.completed_at', 'desc')->get();
     }
 
     public function render()

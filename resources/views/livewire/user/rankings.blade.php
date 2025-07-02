@@ -5,7 +5,62 @@
         <p class="text-sm text-gray-600">See how you rank against others</p>
     </div>
 
+    
     <div class="p-4 space-y-6">
+        <!-- Motivational Message -->
+        <div class="bg-gradient-to-r from-pink-100 to-purple-100 rounded-lg p-4 text-center">
+            <div class="text-2xl mb-2">🌟</div>
+            @if($currentUserRank && $currentUserRank->rank === 1)
+                <h4 class="font-semibold text-gray-900 mb-1">Congratulations, Champion! 🎉</h4>
+                <p class="text-sm text-gray-700">You're currently in the lead! Keep up the great work!</p>
+                <!-- Confetti Stars Effect for #1 User -->
+                <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (window.confettiStarsFired) return;
+                        window.confettiStarsFired = true;
+                        const defaults = {
+                            spread: 360,
+                            ticks: 50,
+                            gravity: 0,
+                            decay: 0.94,
+                            startVelocity: 30,
+                            shapes: ["star"],
+                            colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
+                            };
+                            function shoot() {
+                                confetti({
+                                    ...defaults,
+                                    particleCount: 40,
+                                    scalar: 1.2,
+                                    shapes: ["star"],
+                                });
+
+                                confetti({
+                                    ...defaults,
+                                    particleCount: 10,
+                                    scalar: 0.75,
+                                    shapes: ["circle"],
+                                });
+                                }
+
+                                setTimeout(shoot, 0);
+                                setTimeout(shoot, 100);
+                                setTimeout(shoot, 200);
+                    });
+                </script>
+            @elseif($currentUserRank && $currentUserRank->rank <= 3)
+                <h4 class="font-semibold text-gray-900 mb-1">You're in the Top 3! 🔥</h4>
+                <p class="text-sm text-gray-700">Great job! A few more tasks and you could be #1!</p>
+            @elseif($currentUserRank)
+                <h4 class="font-semibold text-gray-900 mb-1">Keep Climbing! 💪</h4>
+                <p class="text-sm text-gray-700">You're ranked #{{ $currentUserRank->rank }}. Complete more tasks to move up!</p>
+            @else
+                <h4 class="font-semibold text-gray-900 mb-1">Ready to Start? 🚀</h4>
+                <p class="text-sm text-gray-700">Complete your first task to join the leaderboard!</p>
+            @endif
+        </div>
+        
         <!-- Your Achievements -->
         <div class="bg-white rounded-lg shadow p-4">
             <h2 class="font-semibold text-gray-900 mb-3">Your Achievements</h2>
@@ -115,12 +170,20 @@
                                 
                                 <!-- User Info -->
                                 <div>
-                                    <div class="font-medium text-gray-900 {{ $ranking->id === auth()->id() ? 'text-indigo-600' : '' }}">
-                                        {{ $ranking->name }}
-                                        @if($ranking->id === auth()->id())
+                                    @if($ranking->id === auth()->id())
+                                        <div class="font-medium text-indigo-600">
+                                            {{ $ranking->name }}
                                             <span class="text-xs text-indigo-500">(You)</span>
-                                        @endif
-                                    </div>
+                                        </div>
+                                    @else
+                                        <button wire:click="showUserTasks({{ $ranking->id }})" 
+                                                class="font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200 text-left">
+                                            {{ $ranking->name }}
+                                            <svg class="inline w-3 h-3 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </button>
+                                    @endif
                                     <div class="text-sm text-gray-500">{{ number_format($ranking->total_points) }} points</div>
                                 </div>
                             </div>
@@ -181,58 +244,72 @@
             </div>
         @endif
 
-        <!-- Motivational Message -->
-        <div class="bg-gradient-to-r from-pink-100 to-purple-100 rounded-lg p-4 text-center">
-            <div class="text-2xl mb-2">🌟</div>
-            @if($currentUserRank && $currentUserRank->rank === 1)
-                <h4 class="font-semibold text-gray-900 mb-1">Congratulations, Champion! 🎉</h4>
-                <p class="text-sm text-gray-700">You're currently in the lead! Keep up the great work!</p>
-                <!-- Confetti Stars Effect for #1 User -->
-                <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        if (window.confettiStarsFired) return;
-                        window.confettiStarsFired = true;
-                        const defaults = {
-                            spread: 360,
-                            ticks: 50,
-                            gravity: 0,
-                            decay: 0.94,
-                            startVelocity: 30,
-                            shapes: ["star"],
-                            colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
-                            };
-                            function shoot() {
-                                confetti({
-                                    ...defaults,
-                                    particleCount: 40,
-                                    scalar: 1.2,
-                                    shapes: ["star"],
-                                });
-
-                                confetti({
-                                    ...defaults,
-                                    particleCount: 10,
-                                    scalar: 0.75,
-                                    shapes: ["circle"],
-                                });
-                                }
-
-                                setTimeout(shoot, 0);
-                                setTimeout(shoot, 100);
-                                setTimeout(shoot, 200);
-                    });
-                </script>
-            @elseif($currentUserRank && $currentUserRank->rank <= 3)
-                <h4 class="font-semibold text-gray-900 mb-1">You're in the Top 3! 🔥</h4>
-                <p class="text-sm text-gray-700">Great job! A few more tasks and you could be #1!</p>
-            @elseif($currentUserRank)
-                <h4 class="font-semibold text-gray-900 mb-1">Keep Climbing! 💪</h4>
-                <p class="text-sm text-gray-700">You're ranked #{{ $currentUserRank->rank }}. Complete more tasks to move up!</p>
-            @else
-                <h4 class="font-semibold text-gray-900 mb-1">Ready to Start? 🚀</h4>
-                <p class="text-sm text-gray-700">Complete your first task to join the leaderboard!</p>
-            @endif
-        </div>
+        
     </div>
+
+    <!-- Task Details Modal -->
+    @if($showTaskModal)
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" wire:click="closeTaskModal">
+            <div class="bg-white rounded-lg max-w-md w-full max-h-96 overflow-hidden" wire:click.stop>
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold">{{ $selectedUserName }}'s Tasks</h3>
+                            <p class="text-sm opacity-90">{{ ucfirst(str_replace('_', ' ', $timeframe)) }} completed tasks</p>
+                        </div>
+                        <button wire:click="closeTaskModal" class="text-white hover:text-gray-200">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-4 max-h-64 overflow-y-auto">
+                    @if(count($selectedUserTasks) > 0)
+                        <div class="space-y-3">
+                            @foreach($selectedUserTasks as $task)
+                                <div class="border-l-4 border-green-400 pl-3 py-2 bg-green-50 rounded-r">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-900">{{ $task->title }}</h4>
+                                            @if($task->completion_notes)
+                                                <p class="text-xs text-gray-600 mt-1">{{ $task->completion_notes }}</p>
+                                            @endif
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                Completed {{ $task->completed_at->format('M j, g:i A') }}
+                                            </p>
+                                        </div>
+                                        <div class="flex-shrink-0 ml-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                +{{ $task->points }} pts
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <!-- Total Points Summary -->
+                        <div class="mt-4 pt-3 border-t border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium text-gray-900">Total Points Earned:</span>
+                                <span class="font-bold text-green-600">{{ number_format($selectedUserTasks->sum('points')) }} pts</span>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center py-8">
+                            <div class="text-4xl mb-2">🎯</div>
+                            <h4 class="font-medium text-gray-900 mb-1">No completed tasks</h4>
+                            <p class="text-sm text-gray-600">
+                                {{ $selectedUserName }} hasn't completed any tasks {{ $timeframe === 'today' ? 'today' : 'in this period' }} yet.
+                            </p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
