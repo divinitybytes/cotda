@@ -127,18 +127,10 @@ class TaskVerification extends Component
         
         if ($completion->verification_status === 'pending') {
             $adminNotes = $this->adminNotes[$completionId] ?? '';
-            $completion->update([
-                'verification_status' => 'approved',
-                'verified_at' => now(),
-                'verified_by' => Auth::id(),
-                'admin_notes' => $adminNotes
-            ]);
+            $admin = Auth::user();
             
-            // Mark assignment as completed
-            $completion->assignment->markCompleted();
-            
-            // Award points to user
-            $completion->assignment->user->increment('points', $completion->assignment->task->points);
+            // Use the model's approve method to prevent double point awarding
+            $completion->approve($admin, $adminNotes);
             
             session()->flash('message', 'Task completion approved successfully!');
             $this->adminNotes[$completionId] = '';
@@ -151,12 +143,10 @@ class TaskVerification extends Component
         
         if ($completion->verification_status === 'pending') {
             $adminNotes = $this->adminNotes[$completionId] ?? '';
-            $completion->update([
-                'verification_status' => 'rejected',
-                'verified_at' => now(),
-                'verified_by' => Auth::id(),
-                'admin_notes' => $adminNotes
-            ]);
+            $admin = Auth::user();
+            
+            // Use the model's reject method for consistency
+            $completion->reject($admin, $adminNotes);
             
             session()->flash('message', 'Task completion rejected.');
             $this->adminNotes[$completionId] = '';
@@ -167,20 +157,11 @@ class TaskVerification extends Component
     public function approveAll()
     {
         $completions = TaskCompletion::where('verification_status', 'pending')->get();
+        $admin = Auth::user();
         
         foreach ($completions as $completion) {
-            $completion->update([
-                'verification_status' => 'approved',
-                'verified_at' => now(),
-                'verified_by' => Auth::id(),
-                'admin_notes' => 'Bulk approved'
-            ]);
-            
-            // Mark assignment as completed
-            $completion->assignment->markCompleted();
-            
-            // Award points to user
-            $completion->assignment->user->increment('points', $completion->assignment->task->points);
+            // Use the model's approve method to prevent double point awarding
+            $completion->approve($admin, 'Bulk approved');
         }
         
         session()->flash('message', 'All pending completions approved successfully!');
@@ -194,14 +175,11 @@ class TaskVerification extends Component
         }
         
         $completions = TaskCompletion::where('verification_status', 'pending')->get();
+        $admin = Auth::user();
         
         foreach ($completions as $completion) {
-            $completion->update([
-                'verification_status' => 'rejected',
-                'verified_at' => now(),
-                'verified_by' => Auth::id(),
-                'admin_notes' => $this->bulkRejectReason
-            ]);
+            // Use the model's reject method for consistency
+            $completion->reject($admin, $this->bulkRejectReason);
         }
         
         session()->flash('message', 'All pending completions rejected.');

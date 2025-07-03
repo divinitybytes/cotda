@@ -118,7 +118,7 @@ class TaskCompletion extends Model
     /**
      * Approve the completion
      */
-    public function approve(User $admin, string $adminNotes = null): void
+    public function approve(User $admin, ?string $adminNotes = null): void
     {
         $this->update([
             'verification_status' => 'approved',
@@ -136,7 +136,7 @@ class TaskCompletion extends Model
     /**
      * Reject the completion
      */
-    public function reject(User $admin, string $adminNotes = null): void
+    public function reject(User $admin, ?string $adminNotes = null): void
     {
         $this->update([
             'verification_status' => 'rejected',
