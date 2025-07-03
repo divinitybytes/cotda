@@ -100,17 +100,7 @@ class RecurringTaskService
             return false;
         }
 
-        // Ensure task belongs to this user (i.e., they have had this task before)
-        $hasEverBeenAssigned = TaskAssignment::where('task_id', $task->id)
-            ->where('user_id', $user->id)
-            ->exists();
-
-        if (!$hasEverBeenAssigned) {
-            // This task was never assigned to this user before, skip auto-creation.
-            return false;
-        }
-
-        // Check if this user should get this recurring task based on frequency
+        // For recurring tasks, check if this user should get this task based on frequency
         return self::shouldAssignBasedOnFrequency($task, $user, $date);
     }
 
@@ -122,9 +112,10 @@ class RecurringTaskService
         $assignmentDate = Carbon::parse($date);
         
         // Check if user has ever been assigned this task
-        $hasEverBeenAssigned = TaskAssignment::where('task_id', $task->id)
+        $lastAssignment = TaskAssignment::where('task_id', $task->id)
             ->where('user_id', $user->id)
-            ->exists();
+            ->latest('assigned_date')
+            ->first();
 
         switch ($task->recurring_frequency) {
             case 'daily':
@@ -134,34 +125,22 @@ class RecurringTaskService
             case 'weekly':
                 // Weekly tasks should be assigned if:
                 // 1. Never been assigned before, OR
-                // 2. It's been a week since last assignment
-                if (!$hasEverBeenAssigned) {
+                // 2. It's been a week or more since last assignment
+                if (!$lastAssignment) {
                     return true;
                 }
 
-                $lastAssignment = TaskAssignment::where('task_id', $task->id)
-                    ->where('user_id', $user->id)
-                    ->latest('assigned_date')
-                    ->first();
-
-                return $lastAssignment && 
-                       $assignmentDate->diffInDays($lastAssignment->assigned_date) >= 7;
+                return $assignmentDate->diffInDays($lastAssignment->assigned_date) >= 7;
 
             case 'monthly':
                 // Monthly tasks should be assigned if:
                 // 1. Never been assigned before, OR
-                // 2. It's been a month since last assignment
-                if (!$hasEverBeenAssigned) {
+                // 2. It's been a month or more since last assignment
+                if (!$lastAssignment) {
                     return true;
                 }
 
-                $lastAssignment = TaskAssignment::where('task_id', $task->id)
-                    ->where('user_id', $user->id)
-                    ->latest('assigned_date')
-                    ->first();
-
-                return $lastAssignment && 
-                       $assignmentDate->diffInDays($lastAssignment->assigned_date) >= 30;
+                return $assignmentDate->diffInDays($lastAssignment->assigned_date) >= 30;
 
             default:
                 return false;
